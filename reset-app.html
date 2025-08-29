@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset AiBat Custom Prompt</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .status {
+            margin: 20px 0;
+            font-size: 18px;
+        }
+        .reset-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+        .reset-btn:hover {
+            background: #ff3742;
+        }
+        .launch-btn {
+            background: #2ed573;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+        .launch-btn:hover {
+            background: #2ed573;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Reset AiBat Custom Prompt</h1>
+        <div id="status" class="status">Ready to reset all local data</div>
+        <div id="spinner" class="spinner" style="display: none;"></div>
+        
+        <button class="reset-btn" onclick="resetApp()">
+            🗑️ Clear All Data & Reset
+        </button>
+        
+        <button class="launch-btn" onclick="launchApp()" style="display: none;" id="launchBtn">
+            🚀 Launch Fresh App
+        </button>
+        
+        <div style="margin-top: 30px; font-size: 14px; opacity: 0.8;">
+            <p>This will clear:</p>
+            <ul style="text-align: left; display: inline-block;">
+                <li>Custom prompts configuration</li>
+                <li>API settings (OpenAI keys, endpoints)</li>
+                <li>Any cached metadata</li>
+                <li>All localStorage data</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function resetApp() {
+            const statusEl = document.getElementById('status');
+            const spinnerEl = document.getElementById('spinner');
+            const launchBtn = document.getElementById('launchBtn');
+            
+            // Show spinner
+            spinnerEl.style.display = 'block';
+            statusEl.textContent = 'Clearing all localStorage data...';
+            
+            setTimeout(() => {
+                try {
+                    // Clear all localStorage data
+                    localStorage.clear();
+                    
+                    // Also clear sessionStorage for good measure
+                    sessionStorage.clear();
+                    
+                    // Clear any cookies for this domain
+                    document.cookie.split(";").forEach(function(c) { 
+                        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                    });
+                    
+                    console.log('🧹 All local data cleared successfully');
+                    
+                    statusEl.textContent = '✅ All data cleared! Ready for fresh start';
+                    spinnerEl.style.display = 'none';
+                    launchBtn.style.display = 'inline-block';
+                    
+                } catch (error) {
+                    console.error('Error clearing data:', error);
+                    statusEl.textContent = '❌ Error clearing data: ' + error.message;
+                    spinnerEl.style.display = 'none';
+                }
+            }, 1500);
+        }
+        
+        function launchApp() {
+            window.location.href = 'image-bat-custom-prompt.html';
+        }
+        
+        // Auto-reset and launch option
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('auto') === 'true') {
+            resetApp();
+            setTimeout(() => {
+                if (document.getElementById('launchBtn').style.display !== 'none') {
+                    launchApp();
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html> 

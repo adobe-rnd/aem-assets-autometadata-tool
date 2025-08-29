@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAI Metadata Tool</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 OpenAI Metadata Tool</h1>
+            <p>Select a folder to generate OpenAI metadata for your images</p>
+        </div>
+
+        <div class="upload-section">
+            <div class="file-input-wrapper">
+                <input type="file" id="folderInput" class="file-input" webkitdirectory multiple accept="image/*">
+                <button class="file-input-button">📁 Choose Folder</button>
+            </div>
+            <div class="info-text">
+                Select a folder containing images (JPG, PNG, GIF, WebP, etc.)
+            </div>
+            
+            <!-- Configuration Section - Always Visible -->
+            <div class="config-section" style="margin: 20px 0; text-align: center;">
+                <button id="configApiBtnMain" class="export-button" style="background: linear-gradient(45deg, #6f42c1, #e83e8c); margin-bottom: 10px;">⚙️ Configure OpenAI API</button>
+                <div style="font-size: 0.9em; color: #666;">
+                    Configure your Azure OpenAI settings before processing images
+                </div>
+            </div>
+            
+            <div class="stats" id="stats" style="display: none;">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalFiles">0</div>
+                    <div class="stat-label">Total Files</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="imageFiles">0</div>
+                    <div class="stat-label">Images</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="totalSize">0 MB</div>
+                    <div class="stat-label">Total Size</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="thumbnails-section">
+            <div id="loading" class="loading" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p>Processing images...</p>
+            </div>
+            
+            <div id="noImages" class="no-images" style="display: none;">
+                <p>📂 No images found in the selected folder</p>
+            </div>
+            
+            <div id="thumbnailsContainer" style="display: none;">
+                <h2 class="section-title">OpenAI Metadata Generation</h2>
+                <div class="export-section">
+                    <button id="customPromptsBtn" class="export-button" style="background: linear-gradient(45deg, #28a745, #20c997);">📝 Custom Prompts</button>
+                    <button id="generateAllBtn" class="export-button" style="background: linear-gradient(45deg, #fd7e14, #ffc107);">🤖 Auto-Generate All</button>
+                    <button id="exportJsonBtn" class="export-button">📄 Export as JSON</button>
+                    <button id="exportCsvBtn" class="export-button">📊 Export as CSV</button>
+                    <button id="importJsonBtn" class="export-button">📁 Import JSON</button>
+                    <input type="file" id="importFileInput" accept=".json" style="display: none;">
+                </div>
+                <div class="image-counter" id="imageCounter">Showing 0 of 0 images</div>
+                <div class="thumbnails-grid" id="thumbnailsGrid"></div>
+                <button id="loadMoreBtn" class="load-more-button" style="display: none;">Load More Images</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for full-size image view -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <img class="modal-image" id="modalImage">
+        </div>
+    </div>
+
+    <!-- Custom Prompts Modal -->
+    <div id="customPromptsModal" class="api-config-modal">
+        <div class="api-config-content" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
+            <span class="close" style="position: absolute; top: 15px; right: 20px;">&times;</span>
+            <h2 class="api-config-title">📝 Custom Prompts Management</h2>
+            
+            <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #28a745;">
+                <h4 style="margin: 0 0 10px 0; color: #28a745;">💡 How it works:</h4>
+                <p style="margin: 0; font-size: 0.9em; color: #666;">
+                    Define custom prompts for specific properties. Each property will use its own prompt to generate metadata.
+                    If no custom prompt is defined for a property, the default prompt will be used.
+                </p>
+            </div>
+            
+            <div class="custom-prompts-container">
+                <table class="custom-prompts-table">
+                    <thead>
+                        <tr>
+                            <th>Property Name</th>
+                            <th>Custom Prompt</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customPromptsList">
+                        <!-- Custom prompts will be dynamically added here -->
+                    </tbody>
+                </table>
+                
+                <div class="custom-prompts-buttons" style="margin-top: 30px; text-align: center;">
+                    <button id="addCustomPromptBtn" class="add-button">➕ Add New Prompt</button>
+                    <button id="saveCustomPromptsBtn" class="export-button">💾 Save Prompts</button>
+                    <button id="resetCustomPromptsBtn" class="export-button" style="background: #dc3545;">🔄 Reset to Defaults</button>
+                    <br style="margin-bottom: 10px;">
+                    <button id="exportPromptsBtn" class="export-button" style="background: #007bff;">📁 Export to .prompts File</button>
+                    <button id="importPromptsBtn" class="export-button" style="background: #17a2b8;">📂 Import from .prompts File</button>
+                    <input type="file" id="importPromptsInput" accept=".prompts,.json" style="display: none;">
+                    <br style="margin-bottom: 10px;">
+                    <button id="cancelCustomPromptsBtn" class="export-button" style="background: #6c757d;">❌ Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Configuration Modal -->
+    <div id="apiConfigModal" class="api-config-modal">
+        <div class="api-config-content">
+            <span class="close" style="position: absolute; top: 15px; right: 20px;">&times;</span>
+            <h2 class="api-config-title">🔧 Configure OpenAI API</h2>
+            
+            <div class="api-config-field">
+                <label class="api-config-label" for="openaiUrlInput">OpenAI API URL:</label>
+                <input type="url" id="openaiUrlInput" class="api-config-input" 
+                       placeholder="https://api.openai.com/v1/chat/completions">
+            </div>
+            
+            <div class="api-config-field">
+                <label class="api-config-label" for="apiVersionInput">API Version:</label>
+                <input type="text" id="apiVersionInput" class="api-config-input" 
+                       placeholder="2024-02-15-preview">
+            </div>
+            
+            <div class="api-config-field">
+                <label class="api-config-label" for="modelNameInput">Model Name:</label>
+                <input type="text" id="modelNameInput" class="api-config-input" 
+                       placeholder="gpt-4-vision-preview">
+            </div>
+            
+            <div class="api-config-field">
+                <label class="api-config-label" for="deploymentInput">Deployment:</label>
+                <input type="text" id="deploymentInput" class="api-config-input" 
+                       placeholder="your-deployment-name">
+            </div>
+            
+            <div class="api-config-field">
+                <label class="api-config-label" for="apiKeyInput">API Key:</label>
+                <input type="password" id="apiKeyInput" class="api-config-input" 
+                       placeholder="Your API key (optional)">
+            </div>
+            
+            <div class="api-config-field">
+                <label class="api-config-label" for="timeoutInput">Timeout (seconds):</label>
+                <input type="number" id="timeoutInput" class="api-config-input" 
+                       value="30" min="5" max="120">
+            </div>
+            
+            <div class="api-config-buttons">
+                <button id="loadDefaultsBtn" class="export-button" style="background: #17a2b8;">🔄 Load Defaults</button>
+                <button id="testApiBtn" class="export-button">🧪 Test Configuration</button>
+                <button id="saveApiBtn" class="export-button">💾 Save Configuration</button>
+                <button id="cancelApiBtn" class="export-button" style="background: #6c757d;">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include the Metadata API -->
+    <script src="metadata-api.js"></script>
+    
+    <!-- Include the Configuration -->
+    <script src="config.js"></script>
+    
+    <!-- Include Utility Functions -->
+    <script src="utils.js"></script>
+    
+    <!-- Include Custom Prompts Management -->
+    <script src="custom-prompts.js"></script>
+    
+    <!-- Include Export/Import Functionality -->
+    <script src="export-import.js"></script>
+    
+    <script>
+        const folderInput = document.getElementById('folderInput');
+        const loading = document.getElementById('loading');
+        const noImages = document.getElementById('noImages');
+        const thumbnailsContainer = document.getElementById('thumbnailsContainer');
+        const thumbnailsGrid = document.getElementById('thumbnailsGrid');
+        const stats = document.getElementById('stats');
+        const modal = document.getElementById('imageModal');
+        const modalImage = document.getElementById('modalImage');
+        const closeModal = document.querySelector('.close');
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        const imageCounter = document.getElementById('imageCounter');
+        const exportJsonBtn = document.getElementById('exportJsonBtn');
+        const exportCsvBtn = document.getElementById('exportCsvBtn');
+        const importJsonBtn = document.getElementById('importJsonBtn');
+        const importFileInput = document.getElementById('importFileInput');
+
+        // Initialize Metadata API
+        const metadataAPI = new MetadataAPI();
+
+        // Configuration constants are loaded from config.js
+        const imageExtensions = IMAGE_EXTENSIONS;
+        const IMAGES_PER_BATCH_LOCAL = IMAGES_PER_BATCH;
+        let allImageFiles = [];
+        let processedImages = [];
+        let currentDisplayCount = 0;
+        let imageMetadata = {}; // Store metadata for each image
+
+        folderInput.addEventListener('change', handleFolderSelection);
+        closeModal.addEventListener('click', () => modal.style.display = 'none');
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.style.display = 'none';
+        });
+        loadMoreBtn.addEventListener('click', loadMoreImages);
+        
+        // Initialize export/import handlers from export-import.js
+        initializeExportImportHandlers();
+        
+        // API Configuration and Auto-generation
+        const customPromptsBtn = document.getElementById('customPromptsBtn');
+        const generateAllBtn = document.getElementById('generateAllBtn');
+        if (customPromptsBtn) {
+            customPromptsBtn.addEventListener('click', showCustomPromptsModal);
+        }
+        if (generateAllBtn) {
+            generateAllBtn.addEventListener('click', generateAllMetadata);
+        }
+
+        function handleFolderSelection(event) {
+            const files = Array.from(event.target.files);
+            
+            if (files.length === 0) return;
+
+            // Reset state
+            allImageFiles = [];
+            processedImages = [];
+            currentDisplayCount = 0;
+            thumbnailsGrid.innerHTML = '';
+
+            // Show loading
+            loading.style.display = 'block';
+            noImages.style.display = 'none';
+            thumbnailsContainer.style.display = 'none';
+            stats.style.display = 'none';
+            loadMoreBtn.style.display = 'none';
+
+            // Filter image files and sort them
+            const imageFiles = files.filter(file => {
+                const extension = file.name.split('.').pop().toLowerCase();
+                return imageExtensions.includes(extension);
+            }).sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
+
+            allImageFiles = imageFiles;
+
+            // Update stats
+            updateStats(files, imageFiles);
+
+            if (imageFiles.length === 0) {
+                loading.style.display = 'none';
+                noImages.style.display = 'block';
+                return;
+            }
+
+            // Process all images but display only first batch
+            processAllImages(imageFiles);
+        }
+
+        function updateStats(allFiles, imageFiles) {
+            const totalSize = imageFiles.reduce((sum, file) => sum + file.size, 0);
+            
+            document.getElementById('totalFiles').textContent = allFiles.length;
+            document.getElementById('imageFiles').textContent = imageFiles.length;
+            document.getElementById('totalSize').textContent = formatFileSize(totalSize);
+            
+            stats.style.display = 'flex';
+        }
+
+        // formatFileSize function moved to utils.js
+
+        function processAllImages(imageFiles) {
+            let processedCount = 0;
+            processedImages = [];
+
+            imageFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        processedImages[index] = {
+                            file: file,
+                            dataUrl: e.target.result,
+                            index: index + 1,
+                            width: this.width,
+                            height: this.height
+                        };
+                        
+                        processedCount++;
+                        
+                        // Show first batch when all images are processed
+                        if (processedCount === imageFiles.length) {
+                            loading.style.display = 'none';
+                            thumbnailsContainer.style.display = 'block';
+                            displayNextBatch();
+                        }
+                    };
+                    img.src = e.target.result;
+                };
+                
+                reader.onerror = function() {
+                    console.error('Error reading file:', file.name);
+                    processedCount++;
+                    
+                    if (processedCount === imageFiles.length) {
+                        loading.style.display = 'none';
+                        thumbnailsContainer.style.display = 'block';
+                        displayNextBatch();
+                    }
+                };
+                
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function displayNextBatch() {
+            const startIndex = currentDisplayCount;
+            const endIndex = Math.min(startIndex + IMAGES_PER_BATCH_LOCAL, processedImages.length);
+            
+            for (let i = startIndex; i < endIndex; i++) {
+                if (processedImages[i]) {
+                    createThumbnail(processedImages[i]);
+                }
+            }
+            
+            currentDisplayCount = endIndex;
+            updateImageCounter();
+            
+            // Show/hide load more button
+            if (currentDisplayCount < processedImages.length) {
+                loadMoreBtn.style.display = 'block';
+                loadMoreBtn.textContent = `Load More Images (${processedImages.length - currentDisplayCount} remaining)`;
+            } else {
+                loadMoreBtn.style.display = 'none';
+            }
+        }
+
+        function loadMoreImages() {
+            displayNextBatch();
+        }
+
+        function updateImageCounter() {
+            imageCounter.textContent = `Showing ${currentDisplayCount} of ${processedImages.length} images`;
+        }
+
+        function createThumbnail(imageData) {
+            const thumbnailItem = document.createElement('div');
+            thumbnailItem.className = 'thumbnail-item';
+            
+            const imageId = `img_${imageData.index}_${Date.now()}`;
+            
+            // Initialize metadata if not exists
+            if (!imageMetadata[imageId]) {
+                imageMetadata[imageId] = {
+                    filename: imageData.file.name,
+                    version1: {
+                        title: '',
+                        description: '',
+                        tags: ''
+                    },
+                    version2: {
+                        title: '',
+                        description: '',
+                        tags: ''
+                    }
+                };
+            }
+            
+            // Index number
+            const indexElement = document.createElement('div');
+            indexElement.className = 'thumbnail-index';
+            indexElement.textContent = `#${imageData.index}`;
+            
+            // Image container for centering
+            const imageContainer = document.createElement('div');
+            imageContainer.className = 'thumbnail-image-container';
+            
+            // Image
+            const image = document.createElement('img');
+            image.className = 'thumbnail-image';
+            image.src = imageData.dataUrl;
+            image.alt = imageData.file.name;
+            image.loading = 'lazy';
+            
+            imageContainer.appendChild(image);
+            
+            // Info container
+            const info = document.createElement('div');
+            info.className = 'thumbnail-info';
+            
+            // File name
+            const name = document.createElement('div');
+            name.className = 'thumbnail-name';
+            name.textContent = imageData.file.name;
+            
+            // Details container
+            const details = document.createElement('div');
+            details.className = 'thumbnail-details';
+            
+            // File size
+            const size = document.createElement('div');
+            size.className = 'thumbnail-size';
+            size.textContent = formatFileSize(imageData.file.size);
+            
+            // Dimensions
+            const dimensions = document.createElement('div');
+            dimensions.className = 'thumbnail-dimensions';
+            dimensions.textContent = `${imageData.width} × ${imageData.height}`;
+            
+            // Last modified date
+            const date = document.createElement('div');
+            date.className = 'thumbnail-date';
+            date.textContent = new Date(imageData.file.lastModified).toLocaleDateString();
+            
+            details.appendChild(size);
+            details.appendChild(dimensions);
+            details.appendChild(date);
+            
+            info.appendChild(name);
+            info.appendChild(details);
+            
+            // Metadata container
+            const metadataContainer = document.createElement('div');
+            metadataContainer.className = 'thumbnail-metadata';
+            
+            // Function to create a complete metadata column with dynamic fields
+            function createMetadataColumn(versionKey, columnTitle) {
+                const column = document.createElement('div');
+                column.className = 'metadata-column';
+                
+                // Column header
+                const header = document.createElement('div');
+                header.className = 'metadata-column-header';
+                header.textContent = columnTitle;
+                column.appendChild(header);
+                
+                // Get custom prompts to create dynamic fields
+                const customPrompts = getStoredCustomPrompts();
+                console.log('🔧 Creating dynamic fields for custom prompts:', customPrompts);
+                
+                // Initialize metadata storage for this image/version if it doesn't exist
+                if (!imageMetadata[imageId]) {
+                    imageMetadata[imageId] = {
+                        filename: imageData.file.name,
+                        version1: {}
+                    };
+                }
+                if (!imageMetadata[imageId][versionKey]) {
+                    imageMetadata[imageId][versionKey] = {};
+                }
+                
+                // Create fields based on custom prompts (always has at least description field)
+                customPrompts.forEach(promptConfig => {
+                    const field = createDynamicField(
+                        promptConfig.property, 
+                        promptConfig.property.charAt(0).toUpperCase() + promptConfig.property.slice(1), 
+                        `Generated ${promptConfig.property} will appear here...`, 
+                        imageId, 
+                        versionKey
+                    );
+                    column.appendChild(field);
+                });
+                
+                // Auto-generate button for this column
+                const generateBtn = document.createElement('button');
+                generateBtn.className = 'export-button auto-generate-btn';
+                generateBtn.textContent = `🤖 Auto-Generate ${columnTitle}`;
+                generateBtn.onclick = () => generateMetadataForImage(imageId, versionKey, imageData, generateBtn);
+                
+                column.appendChild(generateBtn);
+                
+                return column;
+            }
+            
+            // Helper function to create a dynamic field for any property
+            function createDynamicField(property, label, placeholder, imageId, versionKey) {
+                const field = document.createElement('div');
+                field.className = 'metadata-field';
+                field.setAttribute('data-property', property);
+                
+                const fieldLabel = document.createElement('label');
+                fieldLabel.className = 'metadata-label';
+                fieldLabel.textContent = label;
+                
+                // Determine if this should be a textarea or input based on common patterns
+                const isTextarea = ['description', 'tags', 'keywords', 'summary', 'caption'].includes(property.toLowerCase());
+                
+                const input = document.createElement(isTextarea ? 'textarea' : 'input');
+                if (!isTextarea) input.type = 'text';
+                input.className = `metadata-input ${isTextarea ? 'metadata-textarea' : ''}`;
+                input.placeholder = placeholder;
+                input.value = imageMetadata[imageId][versionKey][property] || '';
+                
+                // Dynamic event listener for any property
+                input.addEventListener('input', (e) => {
+                    if (!imageMetadata[imageId][versionKey]) {
+                        imageMetadata[imageId][versionKey] = {};
+                    }
+                    imageMetadata[imageId][versionKey][property] = e.target.value;
+                    console.log(`📝 Updated ${property} for ${imageId}:`, e.target.value);
+                });
+                
+                field.appendChild(fieldLabel);
+                field.appendChild(input);
+                
+                // Add hint for tags-like fields
+                if (['tags', 'keywords'].includes(property.toLowerCase())) {
+                    const hint = document.createElement('div');
+                    hint.className = 'tags-hint';
+                    hint.textContent = 'Example: nature, landscape, sunset';
+                    field.appendChild(hint);
+                }
+                
+                return field;
+            }
+            
+            // Create metadata column
+            const column1 = createMetadataColumn('version1', 'OpenAI');
+            
+            metadataContainer.appendChild(column1);
+            
+            thumbnailItem.appendChild(indexElement);
+            thumbnailItem.appendChild(imageContainer);
+            thumbnailItem.appendChild(info);
+            thumbnailItem.appendChild(metadataContainer);
+            
+            // Add click event for modal (only on image)
+            image.addEventListener('click', (e) => {
+                e.stopPropagation();
+                modalImage.src = imageData.dataUrl;
+                modal.style.display = 'block';
+            });
+            
+            thumbnailsGrid.appendChild(thumbnailItem);
+        }
+
+        // Keyboard navigation for modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.style.display === 'block') {
+                modal.style.display = 'none';
+            }
+        });
+
+        // Auto-scroll to new images when loading more
+        loadMoreBtn.addEventListener('click', () => {
+            setTimeout(() => {
+                const newImages = thumbnailsGrid.children;
+                if (newImages.length > 0) {
+                    const lastOldImage = newImages[currentDisplayCount - IMAGES_PER_BATCH_LOCAL];
+                    if (lastOldImage) {
+                        lastOldImage.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'start' 
+                        });
+                    }
+                }
+            }, 100);
+        });
+
+        // Export/Import functions moved to export-import.js
+
+        /**
+         * Refresh the current folder selection to update UI with new custom prompts
+         */
+        function refreshCurrentFolder() {
+            if (allImageFiles && allImageFiles.length > 0) {
+                console.log('🔄 Refreshing folder with updated custom prompts...');
+                
+                // Clear current display
+                thumbnailsGrid.innerHTML = '';
+                processedImages = [];
+                currentDisplayCount = 0;
+                
+                // Re-process and display images with new custom prompts
+                processAllImages(allImageFiles);
+                
+                showNotification('✅ Folder refreshed with updated custom prompts!');
+            } else {
+                console.log('ℹ️ No folder currently selected, nothing to refresh');
+            }
+        }
+
+        // Expose refreshCurrentFolder globally for custom-prompts.js
+        window.refreshCurrentFolder = refreshCurrentFolder;
+
+        // showNotification function moved to utils.js
+
+        // API Configuration Functions
+        function showApiConfigModal() {
+            const modal = document.getElementById('apiConfigModal');
+            
+            // Load current configuration
+            const currentConfig = metadataAPI.config;
+            
+            // If fields are empty, populate with defaults, otherwise use current config
+            document.getElementById('openaiUrlInput').value = currentConfig.openaiUrl || currentConfig.openApiUrl || DEFAULT_CONFIG.openaiUrl;
+            document.getElementById('apiVersionInput').value = currentConfig.apiVersion || DEFAULT_CONFIG.apiVersion;
+            document.getElementById('modelNameInput').value = currentConfig.modelName || DEFAULT_CONFIG.modelName;
+            document.getElementById('deploymentInput').value = currentConfig.deployment || DEFAULT_CONFIG.deployment;
+            document.getElementById('apiKeyInput').value = currentConfig.apiKey || DEFAULT_CONFIG.apiKey;
+            document.getElementById('timeoutInput').value = (currentConfig.timeout / 1000) || (DEFAULT_CONFIG.timeout / 1000);
+            
+            modal.style.display = 'block';
+        }
+
+        function saveApiConfiguration() {
+            const openaiUrl = document.getElementById('openaiUrlInput').value.trim();
+            const apiVersion = document.getElementById('apiVersionInput').value.trim();
+            const modelName = document.getElementById('modelNameInput').value.trim();
+            const deployment = document.getElementById('deploymentInput').value.trim();
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            const timeout = parseInt(document.getElementById('timeoutInput').value) * 1000;
+
+            metadataAPI.setConfig({
+                openaiUrl: openaiUrl,
+                openApiUrl: openaiUrl,  // Support both field names
+                apiVersion: apiVersion,
+                modelName: modelName,
+                deployment: deployment,
+                apiKey: apiKey,
+                timeout: timeout,
+                customPrompt: DEFAULT_CONFIG.customPrompt
+            });
+
+            // Save to localStorage for persistence
+            localStorage.setItem('metadataApiConfig', JSON.stringify({
+                openaiUrl: openaiUrl,
+                apiVersion: apiVersion,
+                modelName: modelName,
+                deployment: deployment,
+                apiKey: apiKey,
+                timeout: timeout
+            }));
+
+            document.getElementById('apiConfigModal').style.display = 'none';
+            showNotification('✅ API configuration saved successfully!');
+        }
+
+        function loadApiConfiguration() {
+            try {
+                const savedConfig = localStorage.getItem('metadataApiConfig');
+                if (savedConfig) {
+                    const config = JSON.parse(savedConfig);
+                    metadataAPI.setConfig(config);
+                    console.log('Loaded API configuration from localStorage');
+                }
+            } catch (error) {
+                console.error('Error loading API configuration:', error);
+            }
+        }
+
+        async function testApiConfiguration() {
+            const testBtn = document.getElementById('testApiBtn');
+            const originalText = testBtn.textContent;
+            
+            testBtn.textContent = '🧪 Testing...';
+            testBtn.disabled = true;
+
+            try {
+                // First save the current configuration temporarily
+                const openaiUrl = document.getElementById('openaiUrlInput').value.trim();
+                const apiVersion = document.getElementById('apiVersionInput').value.trim();
+                const modelName = document.getElementById('modelNameInput').value.trim();
+                const deployment = document.getElementById('deploymentInput').value.trim();
+                const apiKey = document.getElementById('apiKeyInput').value.trim();
+                const timeout = parseInt(document.getElementById('timeoutInput').value) * 1000;
+
+                const tempAPI = new MetadataAPI();
+                tempAPI.setConfig({
+                    openaiUrl: openaiUrl,
+                    openApiUrl: openaiUrl,  // Support both field names
+                    apiVersion: apiVersion,
+                    modelName: modelName,
+                    deployment: deployment,
+                    apiKey: apiKey,
+                    timeout: timeout,
+                    customPrompt: DEFAULT_CONFIG.customPrompt
+                });
+
+                const result = await tempAPI.testConfiguration();
+                
+                if (result) {
+                    showNotification('✅ API configuration test successful!');
+                } else {
+                    showNotification('⚠️ API test completed with warnings - check console for details.', 'warning');
+                }
+            } catch (error) {
+                showNotification('❌ API configuration test failed: ' + error.message, 'error');
+            } finally {
+                testBtn.textContent = originalText;
+                testBtn.disabled = false;
+            }
+        }
+
+        // Auto-generation Functions
+        async function generateMetadataForImage(imageId, versionKey, imageData, buttonElement) {
+            const originalText = buttonElement.textContent;
+            buttonElement.textContent = '🔄 Generating...';
+            buttonElement.disabled = true;
+            
+            try {
+                const imageInfo = {
+                    width: imageData.width,
+                    height: imageData.height,
+                    format: imageData.file.name.split('.').pop().toLowerCase(),
+                    size: imageData.file.size,
+                    filename: imageData.file.name
+                };
+
+                let metadata;
+                if (versionKey === 'version1') {
+                    // Check if we have custom prompts defined
+                    const customPrompts = getStoredCustomPrompts();
+                    console.log('🔍 DEBUG: Loaded custom prompts:', customPrompts);
+                    
+                    if (customPrompts.length > 0) {
+                        console.log(`🎯 Using ${customPrompts.length} custom prompts for property-specific generation`);
+                        console.log('🔍 DEBUG: Custom prompts details:', customPrompts.map(p => ({property: p.property, promptLength: p.prompt.length})));
+                        
+                        // Generate using custom prompts for each property
+                        const results = {};
+                        
+                        for (const promptConfig of customPrompts) {
+                            try {
+                                console.log(`🔄 Generating '${promptConfig.property}' using custom prompt (${promptConfig.prompt.substring(0, 100)}...)`);
+                                
+                                const propertyResult = await metadataAPI.generateCustomPropertyMetadata(
+                                    imageData.dataUrl, 
+                                    imageInfo, 
+                                    promptConfig.property, 
+                                    promptConfig.prompt
+                                );
+                                
+                                console.log(`🔍 DEBUG: Raw API response for '${promptConfig.property}':`, propertyResult);
+                                
+                                // Enhanced property value extraction to handle raw responses
+                                let propertyValue = '';
+                                
+                                if (typeof propertyResult === 'string') {
+                                    // Direct string response
+                                    propertyValue = propertyResult.trim();
+                                    console.log(`🔍 DEBUG: Direct string response: "${propertyValue}"`);
+                                } else if (propertyResult && typeof propertyResult === 'object') {
+                                    console.log(`🔍 DEBUG: Object response fields:`, Object.keys(propertyResult));
+                                    
+                                    // First check if the property name matches exactly
+                                    if (propertyResult[promptConfig.property]) {
+                                        propertyValue = propertyResult[promptConfig.property];
+                                        console.log(`🔍 DEBUG: Found exact property match: "${propertyValue}"`);
+                                    } 
+                                    // Then check common fields in order of preference
+                                    else if (propertyResult.title) {
+                                        propertyValue = propertyResult.title;
+                                        console.log(`🔍 DEBUG: Extracted from .title field: "${propertyValue}"`);
+                                    } else if (propertyResult.description) {
+                                        propertyValue = propertyResult.description;
+                                        console.log(`🔍 DEBUG: Extracted from .description field: "${propertyValue}"`);
+                                    } else if (propertyResult.tags) {
+                                        propertyValue = propertyResult.tags;
+                                        console.log(`🔍 DEBUG: Extracted from .tags field: "${propertyValue}"`);
+                                    } else if (propertyResult.content) {
+                                        propertyValue = propertyResult.content;
+                                        console.log(`🔍 DEBUG: Extracted from .content field: "${propertyValue}"`);
+                                    } 
+                                    // If no standard fields, check for raw response content (error cases)
+                                    else {
+                                        // Look for any field that contains substantial text content
+                                        const textFields = Object.keys(propertyResult).filter(key => 
+                                            typeof propertyResult[key] === 'string' && 
+                                            propertyResult[key].length > 10 && 
+                                            !['provider', 'generated_at', 'error'].includes(key)
+                                        );
+                                        
+                                        if (textFields.length > 0) {
+                                            propertyValue = propertyResult[textFields[0]];
+                                            console.log(`🔍 DEBUG: Using text field '${textFields[0]}': "${propertyValue.substring(0, 100)}..."`);
+                                        } else {
+                                            // Last resort: stringify the entire response
+                                            propertyValue = JSON.stringify(propertyResult, null, 2);
+                                            console.log(`🔍 DEBUG: No text fields found, using full response: "${propertyValue.substring(0, 100)}..."`);
+                                        }
+                                    }
+                                } else {
+                                    // Fallback: convert whatever we got to string
+                                    propertyValue = String(propertyResult || '');
+                                    console.log(`🔍 DEBUG: Fallback conversion to string: "${propertyValue}"`);
+                                }
+                                
+                                results[promptConfig.property] = propertyValue;
+                                console.log(`✅ Generated '${promptConfig.property}': "${propertyValue}"`);
+                                
+                            } catch (error) {
+                                console.error(`❌ Error generating '${promptConfig.property}':`, error);
+                                results[promptConfig.property] = `Error: ${error.message}`;
+                            }
+                        }
+                        
+                        console.log('🔍 DEBUG: All results before mapping:', results);
+                        
+                        // Create dynamic metadata object based on custom prompts
+                        metadata = {
+                            provider: 'openai',
+                            generated_at: new Date().toISOString()
+                        };
+                        
+                        // Add all custom prompt results to the metadata object
+                        Object.keys(results).forEach(property => {
+                            metadata[property] = results[property];
+                        });
+                        
+                        console.log('🎉 Dynamic metadata result:', metadata);
+                        console.log(`🔍 DEBUG: Properties included:`, Object.keys(metadata));
+                        
+                    } else {
+                        console.log('📝 No custom prompts found, using default prompt');
+                        // Use default prompt
+                        metadata = await metadataAPI.generateOpenAIMetadata(imageData.dataUrl, imageInfo);
+                    }
+                } else {
+                    metadata = await metadataAPI.generateLlamaMetadata(imageData.dataUrl, imageInfo);
+                }
+
+                        // Update the metadata storage dynamically
+        if (!imageMetadata[imageId]) {
+            imageMetadata[imageId] = {
+                filename: imageData.file.name,
+                version1: {}
+            };
+        }
+        
+        // Store all metadata properties dynamically
+        if (!imageMetadata[imageId][versionKey]) {
+            imageMetadata[imageId][versionKey] = {};
+        }
+        
+        // Copy all metadata properties except system fields
+        Object.keys(metadata).forEach(key => {
+            if (key !== 'provider' && key !== 'generated_at') {
+                imageMetadata[imageId][versionKey][key] = metadata[key];
+            }
+        });
+
+                // Update the UI inputs dynamically based on the metadata properties
+                const column = buttonElement.closest('.metadata-column');
+                const metadataFields = column.querySelectorAll('.metadata-field');
+                
+                // Update each field based on its data-property attribute
+                metadataFields.forEach(field => {
+                    const property = field.getAttribute('data-property');
+                    if (property && metadata.hasOwnProperty(property)) {
+                        const input = field.querySelector('.metadata-input');
+                        if (input) {
+                            input.value = metadata[property] || '';
+                            console.log(`🔄 Updated UI field '${property}': "${metadata[property]}"`);
+                        }
+                    }
+                });
+                
+                // Also store the complete metadata object
+                Object.keys(metadata).forEach(key => {
+                    if (key !== 'provider' && key !== 'generated_at') {
+                        imageMetadata[imageId][versionKey][key] = metadata[key];
+                    }
+                });
+
+                // Show success status
+                let statusElement = column.querySelector('.generate-status');
+                if (!statusElement) {
+                    statusElement = document.createElement('div');
+                    statusElement.className = 'generate-status';
+                    column.appendChild(statusElement);
+                }
+                statusElement.textContent = '✅ Generated successfully';
+                
+                setTimeout(() => {
+                    if (statusElement.parentNode) {
+                        statusElement.remove();
+                    }
+                }, 3000);
+
+            } catch (error) {
+                console.error('Error generating metadata:', error);
+                showNotification('❌ Failed to generate metadata: ' + error.message, 'error');
+                
+                // Populate UI fields with error information instead of leaving them empty
+                const column = buttonElement.closest('.metadata-column');
+                const metadataFields = column.querySelectorAll('.metadata-field');
+                const errorMessage = `❌ Error: ${error.message}`;
+                
+                metadataFields.forEach(field => {
+                    const property = field.getAttribute('data-property');
+                    if (property) {
+                        const input = field.querySelector('.metadata-input');
+                        if (input) {
+                            input.value = errorMessage;
+                            console.log(`🔧 Populated field '${property}' with error message`);
+                        }
+                        
+                        // Also store in metadata
+                        if (!imageMetadata[imageId]) {
+                            imageMetadata[imageId] = { filename: imageData.file.name, version1: {} };
+                        }
+                        if (!imageMetadata[imageId][versionKey]) {
+                            imageMetadata[imageId][versionKey] = {};
+                        }
+                        imageMetadata[imageId][versionKey][property] = errorMessage;
+                    }
+                });
+                
+            } finally {
+                buttonElement.textContent = originalText;
+                buttonElement.disabled = false;
+            }
+        }
+
+        async function generateAllMetadata() {
+            const generateBtn = document.getElementById('generateAllBtn');
+            const originalText = generateBtn.textContent;
+            
+            generateBtn.textContent = '🔄 Generating All...';
+            generateBtn.disabled = true;
+
+            try {
+                const thumbnailItems = document.querySelectorAll('.thumbnail-item');
+                let totalGenerated = 0;
+                let totalErrors = 0;
+
+                for (const item of thumbnailItems) {
+                    const generateButtons = item.querySelectorAll('.auto-generate-btn');
+                    
+                    for (const button of generateButtons) {
+                        try {
+                            await button.click();
+                            totalGenerated++;
+                        } catch (error) {
+                            console.error('Error in batch generation:', error);
+                            totalErrors++;
+                        }
+                        
+                        // Small delay to avoid overwhelming the API
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                }
+
+                showNotification(`✅ Batch generation completed! Generated: ${totalGenerated}, Errors: ${totalErrors}`);
+
+            } catch (error) {
+                console.error('Error in batch generation:', error);
+                showNotification('❌ Batch generation failed: ' + error.message, 'error');
+            } finally {
+                generateBtn.textContent = originalText;
+                generateBtn.disabled = false;
+            }
+        }
+
+        // Custom Prompts Management functions moved to custom-prompts.js
+
+
+        // Modal Event Handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-load default configuration if none exists
+            autoLoadDefaultsIfNeeded();
+            
+            // Load saved API configuration
+            loadApiConfiguration();
+            
+            // API Config modal handlers
+            const apiConfigModal = document.getElementById('apiConfigModal');
+            const apiConfigClose = apiConfigModal.querySelector('.close');
+            const configApiBtnMain = document.getElementById('configApiBtnMain');
+            const loadDefaultsBtn = document.getElementById('loadDefaultsBtn');
+            const saveApiBtn = document.getElementById('saveApiBtn');
+            const cancelApiBtn = document.getElementById('cancelApiBtn');
+            const testApiBtn = document.getElementById('testApiBtn');
+
+            // Initialize custom prompts handlers from custom-prompts.js
+            initializeCustomPromptsHandlers();
+
+            apiConfigClose.addEventListener('click', () => {
+                apiConfigModal.style.display = 'none';
+            });
+
+            // Add event listener for the main configuration button
+            configApiBtnMain.addEventListener('click', showApiConfigModal);
+            
+            loadDefaultsBtn.addEventListener('click', populateConfigFormWithDefaults);
+            saveApiBtn.addEventListener('click', saveApiConfiguration);
+            cancelApiBtn.addEventListener('click', () => {
+                apiConfigModal.style.display = 'none';
+            });
+            testApiBtn.addEventListener('click', testApiConfiguration);
+
+            // Close modal when clicking outside
+            apiConfigModal.addEventListener('click', (e) => {
+                if (e.target === apiConfigModal) {
+                    apiConfigModal.style.display = 'none';
+                }
+            });
+
+
+        });
+    </script>
+</body>
+</html> 

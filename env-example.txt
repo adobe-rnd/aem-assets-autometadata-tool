@@ -1,0 +1,16 @@
+# Example .env file for OpenAI API Configuration
+# Copy this to .env and update with your actual values
+
+# OpenAI API Configuration
+OPENAI_API_URL=https://api.openai.com/v1/chat/completions
+OPENAI_API_VERSION=2024-02-15-preview
+OPENAI_MODEL_NAME=gpt-4-vision-preview
+OPENAI_DEPLOYMENT=your-deployment-name
+OPENAI_API_KEY=sk-your-api-key-here
+OPENAI_TIMEOUT=30
+
+# Additional Configuration
+DEBUG_MODE=true
+
+# Note: These values are currently set as defaults in config.js
+# In a server environment, you would read these from process.env 
