@@ -18,11 +18,11 @@ function exportAsJson() {
     
     const link = document.createElement('a');
     link.href = URL.createObjectURL(dataBlob);
-    link.download = `openai-metadata-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `ai-metadata-${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     
     // Show success message
-    showNotification('✅ OpenAI metadata exported successfully as JSON!');
+    showNotification('✅ AI metadata exported successfully as JSON!');
 }
 
 /**
@@ -51,7 +51,7 @@ function exportAsCsv() {
     // Create dynamic headers
     const headers = ['Index', 'Filename'];
     Array.from(allProperties).forEach(prop => {
-        headers.push(`OpenAI - ${prop.charAt(0).toUpperCase() + prop.slice(1)}`);
+        headers.push(`AI - ${prop.charAt(0).toUpperCase() + prop.slice(1)}`);
     });
     
     const csvData = [headers];
@@ -78,11 +78,11 @@ function exportAsCsv() {
     
     const link = document.createElement('a');
     link.href = URL.createObjectURL(dataBlob);
-    link.download = `openai-metadata-${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `ai-metadata-${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     
     // Show success message
-    showNotification('✅ OpenAI metadata exported successfully as CSV!');
+    showNotification('✅ AI metadata exported successfully as CSV!');
 }
 
 /**
@@ -138,7 +138,7 @@ function updateMetadataInputs() {
             const metadata = imageMetadata[matchingMetadataKey];
             const columns = item.querySelectorAll('.metadata-column');
             
-            // Update OpenAI column with dynamic fields based on custom prompts
+            // Update AI column with dynamic fields based on custom prompts
             if (columns[0] && metadata.version1) {
                 const customPrompts = getStoredCustomPrompts();
                 
@@ -202,9 +202,9 @@ function validateImportData(data) {
         if (!entry || typeof entry !== 'object') {
             return false;
         }
-        // Basic structure validation - should have version1 for OpenAI data
+        // Basic structure validation - should have version1 for AI data
         if (!entry.version1 || typeof entry.version1 !== 'object') {
-            console.warn('Entry missing version1 (OpenAI) data:', entry);
+            console.warn('Entry missing version1 (AI) data:', entry);
         }
     }
     

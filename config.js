@@ -1,4 +1,4 @@
-// Default OpenAI Configuration
+// Default AI Configuration
 // These values correspond to what would be in a .env file:
 // OPENAI_API_URL=https://api.openai.com/v1/chat/completions
 // OPENAI_API_VERSION=2024-02-15-preview

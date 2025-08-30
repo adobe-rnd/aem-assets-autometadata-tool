@@ -18,7 +18,7 @@ class MetadataAPI {
     /**
      * Set API configuration
      * @param {Object} config - Configuration object
-     * @param {string} config.openaiUrl - OpenAI API endpoint URL
+     * @param {string} config.openaiUrl - AI API endpoint URL
      * @param {string} config.llamaUrl - Llama API endpoint URL
      * @param {string} config.apiKey - API key for authentication
      */
@@ -27,7 +27,7 @@ class MetadataAPI {
     }
 
     /**
-     * Generate metadata for an image using OpenAI
+     * Generate metadata for an image using AI
      * @param {string} imageUrl - URL or base64 data of the image
      * @param {Object} imageInfo - Additional image information
      * @param {number} imageInfo.width - Image width in pixels
@@ -38,7 +38,7 @@ class MetadataAPI {
      * @param {string} property - Optional specific property to generate (e.g., 'title', 'description', 'keywords')
      * @returns {Promise<Object>} Promise resolving to metadata object
      */
-    async generateOpenAIMetadata(imageUrl, imageInfo, property = null) {
+    async generateAIMetadata(imageUrl, imageInfo, property = null) {
         return this.callAPI('openai', imageUrl, imageInfo, property);
     }
 
@@ -65,26 +65,26 @@ class MetadataAPI {
     }
 
     /**
-     * Generate metadata using both OpenAI and Llama
+     * Generate metadata using both AI and Llama
      * @param {string} imageUrl - URL or base64 data of the image
      * @param {Object} imageInfo - Additional image information
      * @returns {Promise<Object>} Promise resolving to object with both metadata sets
      */
     async generateBothMetadata(imageUrl, imageInfo) {
         try {
-            const [openaiResult, llamaResult] = await Promise.allSettled([
-                this.generateOpenAIMetadata(imageUrl, imageInfo),
+            const [aiResult, llamaResult] = await Promise.allSettled([
+                this.generateAIMetadata(imageUrl, imageInfo),
                 this.generateLlamaMetadata(imageUrl, imageInfo)
             ]);
 
             return {
-                openai: openaiResult.status === 'fulfilled' ? openaiResult.value : this.getErrorMetadata('OpenAI API failed'),
+                ai: aiResult.status === 'fulfilled' ? aiResult.value : this.getErrorMetadata('AI API failed'),
                 llama: llamaResult.status === 'fulfilled' ? llamaResult.value : this.getErrorMetadata('Llama API failed')
             };
         } catch (error) {
             console.error('Error generating metadata:', error);
             return {
-                openai: this.getErrorMetadata('OpenAI API failed'),
+                ai: this.getErrorMetadata('AI API failed'),
                 llama: this.getErrorMetadata('Llama API failed')
             };
         }
@@ -96,27 +96,27 @@ class MetadataAPI {
      */
     async callAPI(provider, imageUrl, imageInfo, property = null, customPrompt = null) {
         if (provider !== 'openai') {
-            console.warn(`Provider ${provider} not supported with Azure OpenAI`);
+            console.warn(`Provider ${provider} not supported with Azure AI`);
             return this.getDefaultMetadata();
         }
 
-        // Build Azure OpenAI URL: $OPEN_API_URL/openai/deployments/$OPENAI_DEPLOYMENT/chat/completions?api-version=$OPENAI_API_VERSION
+        // Build Azure AI URL: $OPEN_API_URL/openai/deployments/$OPENAI_DEPLOYMENT/chat/completions?api-version=$OPENAI_API_VERSION
         const baseUrl = this.config.openaiUrl || this.config.openApiUrl;
         const deployment = this.config.deployment;
         const apiVersion = this.config.apiVersion;
         
         if (!baseUrl || !deployment || !apiVersion || baseUrl.includes('your-')) {
-            console.warn(`Azure OpenAI configuration incomplete`);
+            console.warn(`Azure AI configuration incomplete`);
             return this.getDefaultMetadata();
         }
 
         const url = `${baseUrl}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
-        const payload = this.buildAzureOpenAIPayload(imageUrl, imageInfo, property, customPrompt);
+        const payload = this.buildAzureAIPayload(imageUrl, imageInfo, property, customPrompt);
         
         let lastError;
         for (let attempt = 1; attempt <= this.config.retryAttempts; attempt++) {
             try {
-                console.log(`Calling Azure OpenAI API (attempt ${attempt}/${this.config.retryAttempts})`);
+                console.log(`Calling Azure AI API (attempt ${attempt}/${this.config.retryAttempts})`);
                 
                 // Log the equivalent curl command for verification
                 this.logCurlCommand(url, payload);
@@ -142,11 +142,11 @@ class MetadataAPI {
                 }
 
                 const result = await response.json();
-                return this.parseAzureOpenAIResponse(result);
+                return this.parseAzureAIResponse(result);
 
             } catch (error) {
                 lastError = error;
-                console.error(`Azure OpenAI API attempt ${attempt} failed:`, error.message);
+                console.error(`Azure AI API attempt ${attempt} failed:`, error.message);
                 
                 if (attempt < this.config.retryAttempts) {
                     // Wait before retry (exponential backoff)
@@ -156,15 +156,15 @@ class MetadataAPI {
         }
 
         // All attempts failed
-        console.error(`Azure OpenAI API failed after ${this.config.retryAttempts} attempts:`, lastError.message);
-        return this.getErrorMetadata(`Azure OpenAI API failed: ${lastError.message}`);
+        console.error(`Azure AI API failed after ${this.config.retryAttempts} attempts:`, lastError.message);
+        return this.getErrorMetadata(`Azure AI API failed: ${lastError.message}`);
     }
 
     /**
-     * Build the Azure OpenAI API payload
+     * Build the Azure AI API payload
      * @private
      */
-    buildAzureOpenAIPayload(imageUrl, imageInfo, property = null, customPrompt = null) {
+    buildAzureAIPayload(imageUrl, imageInfo, property = null, customPrompt = null) {
         // Use custom prompt for specific property, or fall back to default
         let prompt;
         
@@ -219,19 +219,19 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
                 }
             ],
             max_tokens: 4096,
-            temperature: 1,
+            temperature: 0.1,
             top_p: 1,
             model: this.config.modelName || "gpt-4-vision-preview"
         };
     }
 
     /**
-     * Parse the Azure OpenAI API response
+     * Parse the Azure AI API response
      * @private
      */
-    parseAzureOpenAIResponse(response) {
+    parseAzureAIResponse(response) {
         try {
-            // Azure OpenAI response format: response.choices[0].message.content
+            // Azure AI response format: response.choices[0].message.content
             const content = response.choices?.[0]?.message?.content;
             
             if (!content) {
@@ -315,8 +315,8 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
             }
 
         } catch (error) {
-            console.error('Error parsing Azure OpenAI API response:', error);
-            return this.getErrorMetadata(`Failed to parse Azure OpenAI response: ${error.message}`);
+            console.error('Error parsing Azure AI API response:', error);
+            return this.getErrorMetadata(`Failed to parse Azure AI response: ${error.message}`);
         }
     }
 
@@ -326,7 +326,7 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
      */
     parseAPIResponse(response, provider) {
         if (provider === 'openai') {
-            return this.parseAzureOpenAIResponse(response);
+            return this.parseAzureAIResponse(response);
         }
         
         try {
@@ -488,7 +488,7 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
      */
     async testConfiguration() {
         console.log('Testing API configuration...');
-        console.log('OpenAI URL:', this.config.openaiUrl);
+        console.log('AI URL:', this.config.openaiUrl);
         console.log('Llama URL:', this.config.llamaUrl);
         console.log('API Key configured:', this.config.apiKey ? 'Yes' : 'No');
         
@@ -547,12 +547,12 @@ if (typeof window !== 'undefined') {
  * // Get metadata from both providers
  * metadataAPI.generateBothMetadata(imageDataUrl, imageInfo)
  *     .then(result => {
- *         console.log('OpenAI:', result.openai);
+          *         console.log('AI:', result.ai);
  *         console.log('Llama:', result.llama);
  *     });
  * 
  * // Or get from individual providers
- * metadataAPI.generateOpenAIMetadata(imageDataUrl, imageInfo)
+ * metadataAPI.generateAIMetadata(imageDataUrl, imageInfo)
  *     .then(metadata => {
  *         console.log('Title:', metadata.title);
  *         console.log('Description:', metadata.description);

@@ -1,7 +1,7 @@
-# Example .env file for OpenAI API Configuration
+# Example .env file for AI API Configuration
 # Copy this to .env and update with your actual values
 
-# OpenAI API Configuration
+# AI API Configuration
 OPENAI_API_URL=https://api.openai.com/v1/chat/completions
 OPENAI_API_VERSION=2024-02-15-preview
 OPENAI_MODEL_NAME=gpt-4-vision-preview

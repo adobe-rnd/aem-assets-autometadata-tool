@@ -3,30 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenAI Metadata Tool</title>
+    <title>Auto Metadata Tool</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🤖 OpenAI Metadata Tool</h1>
-            <p>Select a folder to generate OpenAI metadata for your images</p>
+            <h1>🤖 Auto Metadata Tool</h1>
+            <p>Select a folder to generate metadata for your images</p>
         </div>
 
         <div class="upload-section">
-            <div class="file-input-wrapper">
-                <input type="file" id="folderInput" class="file-input" webkitdirectory multiple accept="image/*">
-                <button class="file-input-button">📁 Choose Folder</button>
-            </div>
-            <div class="info-text">
-                Select a folder containing images (JPG, PNG, GIF, WebP, etc.)
+            <!-- Main Action Buttons Row -->
+            <div class="button-row">
+                <div class="file-input-wrapper">
+                    <input type="file" id="folderInput" class="file-input" webkitdirectory multiple accept="image/*">
+                    <button class="file-input-button">📁 Choose Folder</button>
+                </div>
+                <button id="configApiBtnMain" class="config-api-button">⚙️ Configure LLM API</button>
             </div>
             
-            <!-- Configuration Section - Always Visible -->
-            <div class="config-section" style="margin: 20px 0; text-align: center;">
-                <button id="configApiBtnMain" class="export-button" style="background: linear-gradient(45deg, #6f42c1, #e83e8c); margin-bottom: 10px;">⚙️ Configure OpenAI API</button>
-                <div style="font-size: 0.9em; color: #666;">
-                    Configure your Azure OpenAI settings before processing images
+            <div class="info-text">
+                Select a folder containing images (JPG, PNG, GIF, WebP, etc.) and configure your LLM settings. Custom prompts will appear after folder selection.
+            </div>
+            
+            <!-- Custom Prompts Section - Hidden until folder is selected -->
+            <div class="custom-prompts-section" id="customPromptsSection" style="display: none;">
+                <h3 class="custom-prompts-title">📝 Custom Prompts</h3>
+                <div class="custom-prompts-description">
+                    Define custom prompts for specific properties. Each property will use its own prompt to generate metadata.
+                </div>
+                
+                <div class="custom-prompts-container">
+                    <table class="custom-prompts-table">
+                        <thead>
+                            <tr>
+                                <th>Property Name</th>
+                                <th>Custom Prompt</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customPromptsList">
+                            <!-- Custom prompts will be dynamically added here -->
+                        </tbody>
+                    </table>
+                    
+                    <div class="custom-prompts-buttons">
+                        <button id="addCustomPromptBtn" class="custom-prompt-btn">➕ Add New Prompt</button>
+                        <button id="saveCustomPromptsBtn" class="custom-prompt-btn">💾 Save Prompts</button>
+                        <button id="resetCustomPromptsBtn" class="custom-prompt-btn reset-btn">🔄 Reset to Defaults</button>
+                        <button id="exportPromptsBtn" class="custom-prompt-btn export-btn">📁 Export</button>
+                        <button id="importPromptsBtn" class="custom-prompt-btn import-btn">📂 Import</button>
+                        <input type="file" id="importPromptsInput" accept=".prompts,.json" style="display: none;">
+                    </div>
                 </div>
             </div>
             
@@ -57,9 +86,8 @@
             </div>
             
             <div id="thumbnailsContainer" style="display: none;">
-                <h2 class="section-title">OpenAI Metadata Generation</h2>
+                <h2 class="section-title">AI Metadata Generation</h2>
                 <div class="export-section">
-                    <button id="customPromptsBtn" class="export-button" style="background: linear-gradient(45deg, #28a745, #20c997);">📝 Custom Prompts</button>
                     <button id="generateAllBtn" class="export-button" style="background: linear-gradient(45deg, #fd7e14, #ffc107);">🤖 Auto-Generate All</button>
                     <button id="exportJsonBtn" class="export-button">📄 Export as JSON</button>
                     <button id="exportCsvBtn" class="export-button">📊 Export as CSV</button>
@@ -128,10 +156,10 @@
     <div id="apiConfigModal" class="api-config-modal">
         <div class="api-config-content">
             <span class="close" style="position: absolute; top: 15px; right: 20px;">&times;</span>
-            <h2 class="api-config-title">🔧 Configure OpenAI API</h2>
+            <h2 class="api-config-title">🔧 Configure AI API</h2>
             
             <div class="api-config-field">
-                <label class="api-config-label" for="openaiUrlInput">OpenAI API URL:</label>
+                <label class="api-config-label" for="openaiUrlInput">AI API URL:</label>
                 <input type="url" id="openaiUrlInput" class="api-config-input" 
                        placeholder="https://api.openai.com/v1/chat/completions">
             </div>
@@ -219,6 +247,13 @@
         let imageMetadata = {}; // Store metadata for each image
 
         folderInput.addEventListener('change', handleFolderSelection);
+        
+        // Add reliable click handler for the Choose Folder button
+        document.querySelector('.file-input-button').addEventListener('click', function(e) {
+            e.preventDefault();
+            folderInput.click();
+        });
+        
         closeModal.addEventListener('click', () => modal.style.display = 'none');
         modal.addEventListener('click', (e) => {
             if (e.target === modal) modal.style.display = 'none';
@@ -228,12 +263,8 @@
         // Initialize export/import handlers from export-import.js
         initializeExportImportHandlers();
         
-        // API Configuration and Auto-generation
-        const customPromptsBtn = document.getElementById('customPromptsBtn');
+        // API Configuration and Auto-generation  
         const generateAllBtn = document.getElementById('generateAllBtn');
-        if (customPromptsBtn) {
-            customPromptsBtn.addEventListener('click', showCustomPromptsModal);
-        }
         if (generateAllBtn) {
             generateAllBtn.addEventListener('click', generateAllMetadata);
         }
@@ -270,8 +301,16 @@
             if (imageFiles.length === 0) {
                 loading.style.display = 'none';
                 noImages.style.display = 'block';
+                // Hide custom prompts section if no images found
+                document.getElementById('customPromptsSection').style.display = 'none';
                 return;
             }
+
+            // Show custom prompts section now that we have images
+            document.getElementById('customPromptsSection').style.display = 'block';
+            
+            // Render the custom prompts list now that the section is visible
+            renderCustomPromptsList();
 
             // Process all images but display only first batch
             processAllImages(imageFiles);
@@ -536,7 +575,7 @@
             }
             
             // Create metadata column
-            const column1 = createMetadataColumn('version1', 'OpenAI');
+            const column1 = createMetadataColumn('version1', 'AI');
             
             metadataContainer.appendChild(column1);
             
@@ -835,7 +874,7 @@
                     } else {
                         console.log('📝 No custom prompts found, using default prompt');
                         // Use default prompt
-                        metadata = await metadataAPI.generateOpenAIMetadata(imageData.dataUrl, imageInfo);
+                        metadata = await metadataAPI.generateAIMetadata(imageData.dataUrl, imageInfo);
                     }
                 } else {
                     metadata = await metadataAPI.generateLlamaMetadata(imageData.dataUrl, imageInfo);
@@ -996,6 +1035,9 @@
 
             // Initialize custom prompts handlers from custom-prompts.js
             initializeCustomPromptsHandlers();
+            
+            // Load custom prompts data but don't render yet (section is hidden)
+            loadCustomPrompts();
 
             apiConfigClose.addEventListener('click', () => {
                 apiConfigModal.style.display = 'none';
