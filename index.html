@@ -14,17 +14,16 @@
         </div>
 
         <div class="upload-section">
+            <div class="info-text">
+                Select a folder containing images (JPG, PNG, GIF, WebP, etc.) and configure your LLM settings. Custom prompts will appear after folder selection.
+            </div>
             <!-- Main Action Buttons Row -->
             <div class="button-row">
                 <div class="file-input-wrapper">
                     <input type="file" id="folderInput" class="file-input" webkitdirectory multiple accept="image/*">
-                    <button class="file-input-button">📁 Choose Folder</button>
+                    <button class="button file-input-button">📁 Choose Folder</button>
                 </div>
-                <button id="configApiBtnMain" class="config-api-button">⚙️ Configure LLM API</button>
-            </div>
-            
-            <div class="info-text">
-                Select a folder containing images (JPG, PNG, GIF, WebP, etc.) and configure your LLM settings. Custom prompts will appear after folder selection.
+                <button id="configApiBtnMain" class="button config-api-button">⚙️ Configure LLM API</button>
             </div>
             
             <!-- Custom Prompts Section - Hidden until folder is selected -->
@@ -86,9 +85,9 @@
             </div>
             
             <div id="thumbnailsContainer" style="display: none;">
-                <h2 class="section-title">AI Metadata Generation</h2>
+                <h2 class="section-title">Auto Metadata Generation</h2>
                 <div class="export-section">
-                    <button id="generateAllBtn" class="export-button" style="background: linear-gradient(45deg, #fd7e14, #ffc107);">🤖 Auto-Generate All</button>
+                    <button id="generateAllBtn" class="export-button" style="background: linear-gradient(45deg, #fd7e14, #ffc107); color: black;">🤖 Auto-Generate All</button>
                     <button id="exportJsonBtn" class="export-button">📄 Export as JSON</button>
                     <button id="exportCsvBtn" class="export-button">📊 Export as CSV</button>
                     <button id="importJsonBtn" class="export-button">📁 Import JSON</button>
@@ -156,10 +155,10 @@
     <div id="apiConfigModal" class="api-config-modal">
         <div class="api-config-content">
             <span class="close" style="position: absolute; top: 15px; right: 20px;">&times;</span>
-            <h2 class="api-config-title">🔧 Configure AI API</h2>
+            <h2 class="api-config-title">🔧 Configure LLM API</h2>
             
             <div class="api-config-field">
-                <label class="api-config-label" for="openaiUrlInput">AI API URL:</label>
+                <label class="api-config-label" for="openaiUrlInput">LLM API URL:</label>
                 <input type="url" id="openaiUrlInput" class="api-config-input" 
                        placeholder="https://api.openai.com/v1/chat/completions">
             </div>
@@ -195,9 +194,9 @@
             </div>
             
             <div class="api-config-buttons">
-                <button id="loadDefaultsBtn" class="export-button" style="background: #17a2b8;">🔄 Load Defaults</button>
-                <button id="testApiBtn" class="export-button">🧪 Test Configuration</button>
-                <button id="saveApiBtn" class="export-button">💾 Save Configuration</button>
+                <button id="loadDefaultsBtn" class="export-button" style="background: #17a2b8;">🔄 defaults</button>
+                <button id="testApiBtn" class="export-button">🧪 Test</button>
+                <button id="saveApiBtn" class="export-button">💾 Save</button>
                 <button id="cancelApiBtn" class="export-button" style="background: #6c757d;">❌ Cancel</button>
             </div>
         </div>
@@ -575,7 +574,7 @@
             }
             
             // Create metadata column
-            const column1 = createMetadataColumn('version1', 'AI');
+            const column1 = createMetadataColumn('version1', 'Metadata');
             
             metadataContainer.appendChild(column1);
             
