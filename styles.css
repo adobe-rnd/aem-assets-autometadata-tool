@@ -131,6 +131,88 @@
 
         
 
+        /* Brand Prompt Section Styling */
+        .brand-prompt-section {
+            margin: 14px 0;
+            padding: 16px;
+            background: #fff8e1;
+            border-radius: 12px;
+            border-left: 4px solid #ff9800;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .brand-prompt-title {
+            color: #ff9800;
+            margin: 0 0 4px 0;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+
+        .brand-prompt-description {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 12px;
+            line-height: 1.2;
+        }
+
+        .brand-prompt-container {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .brand-prompt-field {
+            margin-bottom: 16px;
+        }
+
+        .brand-prompt-label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+
+        .brand-prompt-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9em;
+            line-height: 1.5;
+            resize: none;
+            min-height: 48px;
+            max-height: 200px;
+            height: 48px;
+            overflow-y: auto;
+            transition: border-color 0.3s ease, height 0.2s ease;
+        }
+
+        .brand-prompt-input:focus {
+            outline: none;
+            border-color: #ff9800;
+            box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.1);
+        }
+
+        .brand-prompt-input::placeholder {
+            color: #999;
+            font-style: italic;
+        }
+
+        .brand-prompt-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .brand-prompt-buttons .custom-prompt-btn {
+            font-size: 0.85em;
+            padding: 8px 16px;
+        }
+
         /* Custom Prompts Section Styling */
         .custom-prompts-section {
             margin: 14px 0;

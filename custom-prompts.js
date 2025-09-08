@@ -3,8 +3,9 @@
  * Handles all functionality related to managing custom prompts for metadata generation
  */
 
-// Global state for custom prompts
+// Global state for custom prompts and brand prompt
 let customPrompts = [];
+let brandPrompt = '';
 
 /**
  * Show the custom prompts management modal
@@ -42,6 +43,86 @@ function loadCustomPrompts() {
 }
 
 /**
+ * Load brand prompt from localStorage
+ */
+function loadBrandPrompt() {
+    try {
+        const saved = localStorage.getItem('brandPrompt');
+        if (saved) {
+            brandPrompt = saved;
+            // Update the UI if the input exists
+            const brandPromptInput = document.getElementById('brandPromptInput');
+            if (brandPromptInput) {
+                brandPromptInput.value = brandPrompt;
+                // Trigger auto-expand after setting the value
+                autoExpandBrandPrompt(brandPromptInput);
+            }
+        }
+        console.log('🏷️ Loaded brand prompt:', brandPrompt);
+    } catch (error) {
+        console.error('Error loading brand prompt:', error);
+        brandPrompt = '';
+    }
+}
+
+/**
+ * Auto-expand brand prompt textarea
+ */
+function autoExpandBrandPrompt(element) {
+    if (element) {
+        element.style.height = '48px'; // Reset to minimum height
+        element.style.height = Math.min(element.scrollHeight, 200) + 'px'; // Expand but cap at max-height
+    }
+}
+
+/**
+ * Save brand prompt to localStorage
+ */
+function saveBrandPrompt() {
+    try {
+        const brandPromptInput = document.getElementById('brandPromptInput');
+        if (brandPromptInput) {
+            brandPrompt = brandPromptInput.value.trim();
+            localStorage.setItem('brandPrompt', brandPrompt);
+            console.log('💾 Brand prompt saved to localStorage');
+            showNotification('✅ Brand prompt saved successfully!', 'success');
+        }
+    } catch (error) {
+        console.error('Error saving brand prompt:', error);
+        showNotification('❌ Failed to save brand prompt', 'error');
+    }
+}
+
+/**
+ * Clear brand prompt
+ */
+function clearBrandPrompt() {
+    try {
+        brandPrompt = '';
+        localStorage.removeItem('brandPrompt');
+        
+        // Clear the UI
+        const brandPromptInput = document.getElementById('brandPromptInput');
+        if (brandPromptInput) {
+            brandPromptInput.value = '';
+        }
+        
+        console.log('🗑️ Brand prompt cleared');
+        showNotification('✅ Brand prompt cleared successfully!', 'success');
+    } catch (error) {
+        console.error('Error clearing brand prompt:', error);
+        showNotification('❌ Failed to clear brand prompt', 'error');
+    }
+}
+
+/**
+ * Get the current brand prompt
+ */
+function getBrandPrompt() {
+    return brandPrompt;
+}
+
+/**
  * Save current custom prompts to localStorage and optionally export to file
  */
 function saveCustomPrompts() {
@@ -56,13 +137,18 @@ function saveCustomPrompts() {
 }
 
 /**
- * Export custom prompts to a .prompts file
+ * Export custom prompts and brand prompt to a .prompts file
  */
 function exportPromptsToFile() {
     try {
+        // Get current brand prompt from UI before exporting
+        const brandPromptInput = document.getElementById('brandPromptInput');
+        const currentBrandPrompt = brandPromptInput ? brandPromptInput.value.trim() : brandPrompt;
+        
         const promptsData = {
             version: "1.0",
             exported: new Date().toISOString(),
+            brandPrompt: currentBrandPrompt,
             prompts: customPrompts
         };
         
@@ -74,8 +160,8 @@ function exportPromptsToFile() {
         link.download = `custom-prompts-${new Date().toISOString().split('T')[0]}.prompts`;
         link.click();
         
-        showNotification('✅ Custom prompts exported to .prompts file!');
-        console.log('📁 Custom prompts exported to file');
+        showNotification('✅ Custom prompts and brand prompt exported to .prompts file!');
+        console.log('📁 Custom prompts and brand prompt exported to file');
     } catch (error) {
         console.error('Error exporting prompts to file:', error);
         showNotification('❌ Failed to export prompts to file', 'error');
@@ -83,7 +169,7 @@ function exportPromptsToFile() {
 }
 
 /**
- * Import custom prompts from a .prompts file
+ * Import custom prompts and brand prompt from a .prompts file
  */
 function importPromptsFromFile(event) {
     const file = event.target.files[0];
@@ -100,6 +186,19 @@ function importPromptsFromFile(event) {
                 return;
             }
             
+            // Import brand prompt if present
+            if (importData.brandPrompt !== undefined) {
+                brandPrompt = importData.brandPrompt || '';
+                localStorage.setItem('brandPrompt', brandPrompt);
+                
+                // Update UI
+                const brandPromptInput = document.getElementById('brandPromptInput');
+                if (brandPromptInput) {
+                    brandPromptInput.value = brandPrompt;
+                }
+                console.log('🏷️ Imported brand prompt:', brandPrompt);
+            }
+            
             // Add IDs to imported prompts if they don't have them
             const validPrompts = importData.prompts.map(prompt => ({
                 id: prompt.id || generateId(),
@@ -107,8 +206,8 @@ function importPromptsFromFile(event) {
                 prompt: prompt.prompt || ''
             })).filter(p => p.property.trim() && p.prompt.trim());
             
-            if (validPrompts.length === 0) {
-                showNotification('❌ No valid prompts found in file', 'error');
+            if (validPrompts.length === 0 && !importData.brandPrompt) {
+                showNotification('❌ No valid prompts or brand prompt found in file', 'error');
                 return;
             }
             
@@ -126,8 +225,12 @@ function importPromptsFromFile(event) {
                 window.refreshCurrentFolder();
             }
             
-            showNotification(`✅ Successfully imported ${validPrompts.length} custom prompts!`);
-            console.log('📁 Custom prompts imported from file:', validPrompts);
+            const importedItems = [];
+            if (validPrompts.length > 0) importedItems.push(`${validPrompts.length} custom prompts`);
+            if (importData.brandPrompt !== undefined) importedItems.push('brand prompt');
+            
+            showNotification(`✅ Successfully imported ${importedItems.join(' and ')}!`);
+            console.log('📁 Custom prompts and brand prompt imported from file:', { validPrompts, brandPrompt });
             
         } catch (error) {
             console.error('Error importing prompts from file:', error);
@@ -318,10 +421,10 @@ function getStoredCustomPrompts() {
 }
 
 /**
- * Initialize custom prompts event handlers
+ * Initialize custom prompts and brand prompt event handlers
  */
 function initializeCustomPromptsHandlers() {
-    // Get DOM elements
+    // Get DOM elements for custom prompts
     const customPromptsBtn = document.getElementById('customPromptsBtn');
     const customPromptsModal = document.getElementById('customPromptsModal');
     const customPromptsClose = customPromptsModal ? customPromptsModal.querySelector('.close') : null;
@@ -332,6 +435,11 @@ function initializeCustomPromptsHandlers() {
     const exportPromptsBtn = document.getElementById('exportPromptsBtn');
     const importPromptsBtn = document.getElementById('importPromptsBtn');
     const importPromptsInput = document.getElementById('importPromptsInput');
+    
+    // Get DOM elements for brand prompt
+    const saveBrandPromptBtn = document.getElementById('saveBrandPromptBtn');
+    const clearBrandPromptBtn = document.getElementById('clearBrandPromptBtn');
+    const brandPromptInput = document.getElementById('brandPromptInput');
 
     // Add event listeners
     if (customPromptsBtn) {
@@ -385,7 +493,40 @@ function initializeCustomPromptsHandlers() {
         });
     }
 
-    console.log('🎯 Custom prompts event handlers initialized');
+    // Brand prompt event listeners
+    if (saveBrandPromptBtn) {
+        saveBrandPromptBtn.addEventListener('click', saveBrandPrompt);
+    }
+
+    if (clearBrandPromptBtn) {
+        clearBrandPromptBtn.addEventListener('click', clearBrandPrompt);
+    }
+
+    // Auto-save brand prompt on input change (debounced) and auto-expand
+    if (brandPromptInput) {
+        let brandPromptTimeout;
+        
+        // Initial auto-expand on page load (in case there's saved content)
+        autoExpandBrandPrompt(brandPromptInput);
+        
+        brandPromptInput.addEventListener('input', () => {
+            // Auto-expand the textarea
+            autoExpandBrandPrompt(brandPromptInput);
+            
+            // Auto-save after typing stops
+            clearTimeout(brandPromptTimeout);
+            brandPromptTimeout = setTimeout(() => {
+                brandPrompt = brandPromptInput.value.trim();
+            }, 500); // Save after 500ms of no typing
+        });
+        
+        // Also auto-expand on paste events
+        brandPromptInput.addEventListener('paste', () => {
+            setTimeout(() => autoExpandBrandPrompt(brandPromptInput), 0);
+        });
+    }
+
+    console.log('🎯 Custom prompts and brand prompt event handlers initialized');
 }
 
 // Export functions for module usage
@@ -404,7 +545,12 @@ if (typeof module !== 'undefined' && module.exports) {
         getStoredCustomPrompts,
         initializeCustomPromptsHandlers,
         exportPromptsToFile,
-        importPromptsFromFile
+        importPromptsFromFile,
+        loadBrandPrompt,
+        saveBrandPrompt,
+        clearBrandPrompt,
+        getBrandPrompt,
+        autoExpandBrandPrompt
     };
 }
 
@@ -422,4 +568,9 @@ window.saveCustomPromptsAndClose = saveCustomPromptsAndClose;
 window.getStoredCustomPrompts = getStoredCustomPrompts;
 window.initializeCustomPromptsHandlers = initializeCustomPromptsHandlers;
 window.exportPromptsToFile = exportPromptsToFile;
-window.importPromptsFromFile = importPromptsFromFile; 
+window.importPromptsFromFile = importPromptsFromFile;
+window.loadBrandPrompt = loadBrandPrompt;
+window.saveBrandPrompt = saveBrandPrompt;
+window.clearBrandPrompt = clearBrandPrompt;
+window.getBrandPrompt = getBrandPrompt;
+window.autoExpandBrandPrompt = autoExpandBrandPrompt; 

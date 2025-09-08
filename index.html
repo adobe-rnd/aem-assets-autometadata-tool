@@ -26,6 +26,27 @@
                 <button id="configApiBtnMain" class="button config-api-button">⚙️ Configure LLM API</button>
             </div>
             
+            <!-- Brand Prompt Section - Hidden until folder is selected -->
+            <div class="brand-prompt-section" id="brandPromptSection" style="display: none;">
+                <h3 class="brand-prompt-title">🏷️ Brand Prompt</h3>
+                <div class="brand-prompt-description">
+                    Define a brand prompt that will be used across all metadata generation to maintain consistency.
+                </div>
+                
+                <div class="brand-prompt-container">
+                    <div class="brand-prompt-field">
+                        <label for="brandPromptInput" class="brand-prompt-label">Brand Prompt:</label>
+                        <textarea id="brandPromptInput" class="brand-prompt-input" 
+                                placeholder="Enter your brand prompt here (e.g., 'This image is for [Brand Name] marketing materials. Focus on [brand values/tone]...')"></textarea>
+                    </div>
+                    
+                    <div class="brand-prompt-buttons">
+                        <button id="saveBrandPromptBtn" class="custom-prompt-btn">💾 Save Brand Prompt</button>
+                        <button id="clearBrandPromptBtn" class="custom-prompt-btn reset-btn">🗑️ Clear</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Custom Prompts Section - Hidden until folder is selected -->
             <div class="custom-prompts-section" id="customPromptsSection" style="display: none;">
                 <h3 class="custom-prompts-title">📝 Custom Prompts</h3>
@@ -300,12 +321,14 @@
             if (imageFiles.length === 0) {
                 loading.style.display = 'none';
                 noImages.style.display = 'block';
-                // Hide custom prompts section if no images found
+                // Hide brand prompt and custom prompts sections if no images found
+                document.getElementById('brandPromptSection').style.display = 'none';
                 document.getElementById('customPromptsSection').style.display = 'none';
                 return;
             }
 
-            // Show custom prompts section now that we have images
+            // Show brand prompt and custom prompts sections now that we have images
+            document.getElementById('brandPromptSection').style.display = 'block';
             document.getElementById('customPromptsSection').style.display = 'block';
             
             // Render the custom prompts list now that the section is visible
@@ -1035,8 +1058,9 @@
             // Initialize custom prompts handlers from custom-prompts.js
             initializeCustomPromptsHandlers();
             
-            // Load custom prompts data but don't render yet (section is hidden)
+            // Load custom prompts and brand prompt data but don't render yet (sections are hidden)
             loadCustomPrompts();
+            loadBrandPrompt();
 
             apiConfigClose.addEventListener('click', () => {
                 apiConfigModal.style.display = 'none';

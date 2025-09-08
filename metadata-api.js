@@ -200,6 +200,15 @@ RULES:
 Return in pretty-print JSON format. Do not add Markdown or code block formatting. Use exactly these keys: 'Title' (string), 'Description' (string), and 'Keywords' (string containing a comma-separated list of tags`;
         }
 
+        // Prepend brand prompt if it exists
+        const brandPrompt = this.getBrandPrompt();
+        if (brandPrompt && brandPrompt.trim()) {
+            // Ensure brand prompt ends with a newline if it doesn't already
+            const formattedBrandPrompt = brandPrompt.trim().endsWith('\n') ? brandPrompt.trim() : brandPrompt.trim() + '\n';
+            prompt = formattedBrandPrompt + '\n' + prompt;
+            console.log('🏷️ Prepended brand prompt to custom prompt');
+        }
+
         return {
             messages: [
                 {
@@ -375,6 +384,20 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
                     prompt: 'Generate a detailed description for this image.'
                 }
             ];
+        }
+    }
+
+    /**
+     * Get brand prompt from localStorage
+     * @private
+     */
+    getBrandPrompt() {
+        try {
+            const brandPrompt = localStorage.getItem('brandPrompt');
+            return brandPrompt || '';
+        } catch (error) {
+            console.error('Error loading brand prompt:', error);
+            return '';
         }
     }
 
