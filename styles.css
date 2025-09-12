@@ -447,14 +447,18 @@
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            min-width: 220px;
-            min-height: 200px;
+            width: 220px;
+            height: 200px;
+            background: #f8f9fa;
+            border-radius: 12px;
         }
 
         .thumbnail-image {
-            width: 200px;
-            height: 200px;
-            object-fit: cover;
+            max-width: 200px;
+            max-height: 200px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
             border-radius: 12px;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -857,14 +861,16 @@
             }
             
             .thumbnail-image-container {
-                min-width: 140px;
-                min-height: 140px;
+                width: 140px;
+                height: 140px;
                 align-self: center;
             }
             
             .thumbnail-image {
-                width: 140px;
-                height: 140px;
+                max-width: 140px;
+                max-height: 140px;
+                width: auto;
+                height: auto;
             }
             
             .thumbnail-info {
