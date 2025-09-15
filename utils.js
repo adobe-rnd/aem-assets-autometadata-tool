@@ -130,6 +130,49 @@ function isValidImage(filename) {
     return IMAGE_EXTENSIONS.includes(extension);
 }
 
+/**
+ * Concatenate imageInfo properties with customPrompt in property_name=value format
+ * @param {Object} imageInfo - Image information object
+ * @param {number} imageInfo.width - Image width in pixels
+ * @param {number} imageInfo.height - Image height in pixels
+ * @param {string} imageInfo.format - Image format (jpg, png, etc.)
+ * @param {number} imageInfo.size - File size in bytes
+ * @param {string} imageInfo.filename - Original filename
+ * @param {string} customPrompt - Custom prompt to concatenate with
+ * @returns {string} Concatenated string with imageInfo properties and customPrompt
+ */
+function concatenateImageInfoWithPrompt(imageInfo, customPrompt) {
+    if (!imageInfo || typeof imageInfo !== 'object') {
+        return customPrompt || '';
+    }
+    
+    if (!customPrompt || typeof customPrompt !== 'string') {
+        customPrompt = '';
+    }
+    
+    // Build property=value pairs from imageInfo
+    const propertyPairs = [];
+    
+    // Iterate through all properties in imageInfo
+    for (const [key, value] of Object.entries(imageInfo)) {
+        if (value !== null && value !== undefined) {
+            propertyPairs.push(`${key}=${value}`);
+        }
+    }
+    
+    // Join the property pairs
+    const imageInfoString = propertyPairs.join(' ');
+    
+    // Concatenate with custom prompt
+    if (imageInfoString && customPrompt) {
+        return `Using the following image file information: ${imageInfoString} and the following custom prompt: ${customPrompt}`;
+    } else if (imageInfoString) {
+        return imageInfoString;
+    } else {
+        return customPrompt;
+    }
+}
+
 // Export functions for module usage
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -140,7 +183,8 @@ if (typeof module !== 'undefined' && module.exports) {
         debounce,
         scrollToElement,
         copyToClipboard,
-        isValidImage
+        isValidImage,
+        concatenateImageInfoWithPrompt
     };
 }
 
@@ -152,4 +196,5 @@ window.generateId = generateId;
 window.debounce = debounce;
 window.scrollToElement = scrollToElement;
 window.copyToClipboard = copyToClipboard;
-window.isValidImage = isValidImage; 
+window.isValidImage = isValidImage;
+window.concatenateImageInfoWithPrompt = concatenateImageInfoWithPrompt; 

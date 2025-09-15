@@ -805,12 +805,12 @@
                         for (const promptConfig of customPrompts) {
                             try {
                                 console.log(`🔄 Generating '${promptConfig.property}' using custom prompt (${promptConfig.prompt.substring(0, 100)}...)`);
-                                
+                                fullPrompt = concatenateImageInfoWithPrompt(imageInfo, promptConfig.prompt);
                                 const propertyResult = await metadataAPI.generateCustomPropertyMetadata(
                                     imageData.dataUrl, 
                                     imageInfo, 
                                     promptConfig.property, 
-                                    promptConfig.prompt
+                                    fullPrompt
                                 );
                                 
                                 console.log(`🔍 DEBUG: Raw API response for '${promptConfig.property}':`, propertyResult);
