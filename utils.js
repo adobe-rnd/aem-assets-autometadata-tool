@@ -156,16 +156,19 @@ function concatenateImageInfoWithPrompt(imageInfo, customPrompt) {
     // Iterate through all properties in imageInfo
     for (const [key, value] of Object.entries(imageInfo)) {
         if (value !== null && value !== undefined) {
-            propertyPairs.push(`${key}=${value}`);
+            propertyPairs.push(`- ${key}: ${value}`);
         }
     }
     
     // Join the property pairs
-    const imageInfoString = propertyPairs.join(' ');
+    const imageInfoString = propertyPairs.join('\n');
     
     // Concatenate with custom prompt
     if (imageInfoString && customPrompt) {
-        return `Using the following image file information: ${imageInfoString} and the following custom prompt: ${customPrompt}`;
+        return `Using the following image file information: 
+        ${imageInfoString} 
+        Do not format or describe the results. Provide the details as plain text. Unless the custom prompt specifies otherwise.
+        Now, please proceed with the following custom prompt: ${customPrompt}`;
     } else if (imageInfoString) {
         return imageInfoString;
     } else {
