@@ -9,7 +9,7 @@
 
 // Application Configuration Constants
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico', 'tiff', 'tif'];
-const IMAGES_PER_BATCH = 20;
+const IMAGES_PER_BATCH = 100;
 
 // Default custom prompts for first-time users
 const DEFAULT_CUSTOM_PROMPTS = [
