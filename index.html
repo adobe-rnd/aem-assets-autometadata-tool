@@ -24,6 +24,7 @@
                     <button class="button file-input-button">📁 Choose Folder</button>
                 </div>
                 <button id="configApiBtnMain" class="button config-api-button">⚙️ Configure LLM API</button>
+                <button id="configSystemPromptBtn" class="button config-api-button">🧩 System Prompt</button>
             </div>
             
             <!-- Brand Prompt Section - Hidden until folder is selected -->
@@ -168,6 +169,32 @@
                     <br style="margin-bottom: 10px;">
                     <button id="cancelCustomPromptsBtn" class="export-button" style="background: #6c757d;">❌ Cancel</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Prompt Modal -->
+    <div id="systemPromptModal" class="api-config-modal">
+        <div class="api-config-content" style="max-width: 720px;">
+            <span class="close" style="position: absolute; top: 15px; right: 20px;">&times;</span>
+            <h2 class="api-config-title">🧩 System Prompt</h2>
+
+            <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #6f42c1;">
+                <p style="margin: 0; font-size: 0.9em; color: #666;">
+                    Define a global system instruction used for all Azure OpenAI requests. If left empty, no system message will be sent.
+                </p>
+            </div>
+
+            <div class="api-config-field">
+                <label class="api-config-label" for="systemPromptInput">System Prompt:</label>
+                <textarea id="systemPromptInput" class="api-config-input" style="min-height: 120px; resize: vertical;"
+                          placeholder="e.g., You are an assistant that generates consistent, brand-safe metadata."></textarea>
+            </div>
+
+            <div class="api-config-buttons">
+                <button id="saveSystemPromptBtn" class="export-button">💾 Save</button>
+                <button id="clearSystemPromptBtn" class="export-button" style="background: #dc3545;">🗑️ Clear</button>
+                <button id="cancelSystemPromptBtn" class="export-button" style="background: #6c757d;">❌ Cancel</button>
             </div>
         </div>
     </div>
@@ -554,6 +581,27 @@
                 return column;
             }
             
+            // Confidence pill helpers
+            function applyConfidencePill(pillEl, score) {
+                if (!pillEl) return;
+                // Reset classes
+                pillEl.classList.remove('confidence-pill--hidden', 'confidence-pill--low', 'confidence-pill--medium', 'confidence-pill--high');
+                if (typeof score === 'number' && score >= 0 && score <= 1) {
+                    const pct = Math.round(score * 100);
+                    pillEl.textContent = pct + '%';
+                    if (score >= 0.8) {
+                        pillEl.classList.add('confidence-pill--high');
+                    } else if (score >= 0.5) {
+                        pillEl.classList.add('confidence-pill--medium');
+                    } else {
+                        pillEl.classList.add('confidence-pill--low');
+                    }
+                } else {
+                    pillEl.textContent = '';
+                    pillEl.classList.add('confidence-pill--hidden');
+                }
+            }
+
             // Helper function to create a dynamic field for any property
             function createDynamicField(property, label, placeholder, imageId, versionKey) {
                 const field = document.createElement('div');
@@ -563,6 +611,11 @@
                 const fieldLabel = document.createElement('label');
                 fieldLabel.className = 'metadata-label';
                 fieldLabel.textContent = label;
+                // Confidence pill placeholder
+                const confidencePill = document.createElement('span');
+                confidencePill.className = 'confidence-pill confidence-pill--hidden';
+                confidencePill.setAttribute('data-confidence-for', property);
+                fieldLabel.appendChild(confidencePill);
                 
                 // Determine if this should be a textarea or input based on common patterns
                 const isTextarea = ['description', 'tags', 'keywords', 'summary', 'caption'].includes(property.toLowerCase());
@@ -571,14 +624,27 @@
                 if (!isTextarea) input.type = 'text';
                 input.className = `metadata-input ${isTextarea ? 'metadata-textarea' : ''}`;
                 input.placeholder = placeholder;
-                input.value = imageMetadata[imageId][versionKey][property] || '';
+                // Read existing value and confidence (supports string or object shape)
+                const existing = imageMetadata[imageId][versionKey][property];
+                const existingConfidence = (existing && typeof existing === 'object' && ('confidence_score' in existing)) ? existing.confidence_score : null;
+                if (existing && typeof existing === 'object' && ('value' in existing)) {
+                    input.value = existing.value || '';
+                } else {
+                    input.value = existing || '';
+                }
+                applyConfidencePill(confidencePill, existingConfidence);
                 
                 // Dynamic event listener for any property
                 input.addEventListener('input', (e) => {
                     if (!imageMetadata[imageId][versionKey]) {
                         imageMetadata[imageId][versionKey] = {};
                     }
-                    imageMetadata[imageId][versionKey][property] = e.target.value;
+                    const current = imageMetadata[imageId][versionKey][property];
+                    const currentConfidence = (current && typeof current === 'object' && ('confidence_score' in current)) ? current.confidence_score : null;
+                    imageMetadata[imageId][versionKey][property] = {
+                        value: e.target.value,
+                        confidence_score: currentConfidence
+                    };
                     console.log(`📝 Updated ${property} for ${imageId}:`, e.target.value);
                 });
                 
@@ -730,6 +796,27 @@
                 console.error('Error loading API configuration:', error);
             }
         }
+
+        // Global confidence pill helper (used across modules)
+        function applyConfidencePill(pillEl, score) {
+            if (!pillEl) return;
+            pillEl.classList.remove('confidence-pill--hidden', 'confidence-pill--low', 'confidence-pill--medium', 'confidence-pill--high');
+            if (typeof score === 'number' && score >= 0 && score <= 1) {
+                const pct = Math.round(score * 100);
+                pillEl.textContent = pct + '%';
+                if (score >= 0.8) {
+                    pillEl.classList.add('confidence-pill--high');
+                } else if (score >= 0.5) {
+                    pillEl.classList.add('confidence-pill--medium');
+                } else {
+                    pillEl.classList.add('confidence-pill--low');
+                }
+            } else {
+                pillEl.textContent = '';
+                pillEl.classList.add('confidence-pill--hidden');
+            }
+        }
+        window.applyConfidencePill = applyConfidencePill;
 
         async function testApiConfiguration() {
             const testBtn = document.getElementById('testApiBtn');
@@ -915,10 +1002,21 @@
             imageMetadata[imageId][versionKey] = {};
         }
         
-        // Copy all metadata properties except system fields
+        // Copy all metadata properties except system fields, normalizing to { value, confidence_score }
         Object.keys(metadata).forEach(key => {
             if (key !== 'provider' && key !== 'generated_at') {
-                imageMetadata[imageId][versionKey][key] = metadata[key];
+                const val = metadata[key];
+                if (val && typeof val === 'object' && ('value' in val || 'confidence_score' in val)) {
+                    imageMetadata[imageId][versionKey][key] = {
+                        value: val.value !== undefined ? val.value : '',
+                        confidence_score: val.confidence_score !== undefined ? val.confidence_score : null
+                    };
+                } else {
+                    imageMetadata[imageId][versionKey][key] = {
+                        value: val !== undefined && val !== null ? val : '',
+                        confidence_score: null
+                    };
+                }
             }
         });
 
@@ -931,17 +1029,35 @@
                     const property = field.getAttribute('data-property');
                     if (property && metadata.hasOwnProperty(property)) {
                         const input = field.querySelector('.metadata-input');
+                        const pill = field.querySelector('.confidence-pill');
                         if (input) {
-                            input.value = metadata[property] || '';
-                            console.log(`🔄 Updated UI field '${property}': "${metadata[property]}"`);
+                            const val = metadata[property];
+                            const display = (val && typeof val === 'object' && ('value' in val)) ? (val.value || '') : (val || '');
+                            input.value = display;
+                            console.log(`🔄 Updated UI field '${property}': "${display}"`);
                         }
+                        // Update confidence pill
+                        const valObj = metadata[property];
+                        const score = (valObj && typeof valObj === 'object' && ('confidence_score' in valObj)) ? valObj.confidence_score : null;
+                        applyConfidencePill(pill, score);
                     }
                 });
                 
-                // Also store the complete metadata object
+                // Also store the complete metadata object (normalized)
                 Object.keys(metadata).forEach(key => {
                     if (key !== 'provider' && key !== 'generated_at') {
-                        imageMetadata[imageId][versionKey][key] = metadata[key];
+                        const val = metadata[key];
+                        if (val && typeof val === 'object' && ('value' in val || 'confidence_score' in val)) {
+                            imageMetadata[imageId][versionKey][key] = {
+                                value: val.value !== undefined ? val.value : '',
+                                confidence_score: val.confidence_score !== undefined ? val.confidence_score : null
+                            };
+                        } else {
+                            imageMetadata[imageId][versionKey][key] = {
+                                value: val !== undefined && val !== null ? val : '',
+                                confidence_score: null
+                            };
+                        }
                     }
                 });
 
@@ -985,7 +1101,10 @@
                         if (!imageMetadata[imageId][versionKey]) {
                             imageMetadata[imageId][versionKey] = {};
                         }
-                        imageMetadata[imageId][versionKey][property] = errorMessage;
+                        imageMetadata[imageId][versionKey][property] = {
+                            value: errorMessage,
+                            confidence_score: null
+                        };
                     }
                 });
                 
@@ -1037,6 +1156,33 @@
 
         // Custom Prompts Management functions moved to custom-prompts.js
 
+        // System Prompt helpers
+        function loadSystemPrompt() {
+            try {
+                const value = localStorage.getItem('systemPrompt');
+                return value || '';
+            } catch (error) {
+                console.error('Error loading system prompt:', error);
+                return '';
+            }
+        }
+
+        function saveSystemPrompt(value) {
+            try {
+                localStorage.setItem('systemPrompt', (value || '').trim());
+            } catch (error) {
+                console.error('Error saving system prompt:', error);
+            }
+        }
+
+        function clearSystemPromptStorage() {
+            try {
+                localStorage.removeItem('systemPrompt');
+            } catch (error) {
+                console.error('Error clearing system prompt:', error);
+            }
+        }
+
 
         // Modal Event Handlers
         document.addEventListener('DOMContentLoaded', function() {
@@ -1083,6 +1229,68 @@
                 }
             });
 
+            // System Prompt modal handlers
+            const systemPromptModal = document.getElementById('systemPromptModal');
+            const systemPromptClose = systemPromptModal ? systemPromptModal.querySelector('.close') : null;
+            const configSystemPromptBtn = document.getElementById('configSystemPromptBtn');
+            const systemPromptInput = document.getElementById('systemPromptInput');
+            const saveSystemPromptBtn = document.getElementById('saveSystemPromptBtn');
+            const clearSystemPromptBtn = document.getElementById('clearSystemPromptBtn');
+            const cancelSystemPromptBtn = document.getElementById('cancelSystemPromptBtn');
+
+            if (configSystemPromptBtn) {
+                configSystemPromptBtn.addEventListener('click', () => {
+                    if (systemPromptInput) {
+                        systemPromptInput.value = loadSystemPrompt();
+                    }
+                    if (systemPromptModal) {
+                        systemPromptModal.style.display = 'block';
+                    }
+                });
+            }
+
+            if (systemPromptClose) {
+                systemPromptClose.addEventListener('click', () => {
+                    systemPromptModal.style.display = 'none';
+                });
+            }
+
+            if (cancelSystemPromptBtn) {
+                cancelSystemPromptBtn.addEventListener('click', () => {
+                    systemPromptModal.style.display = 'none';
+                });
+            }
+
+            if (saveSystemPromptBtn) {
+                saveSystemPromptBtn.addEventListener('click', () => {
+                    const value = systemPromptInput ? systemPromptInput.value : '';
+                    saveSystemPrompt(value);
+                    if (typeof showNotification === 'function') {
+                        showNotification('✅ System prompt saved successfully!');
+                    }
+                    systemPromptModal.style.display = 'none';
+                });
+            }
+
+            if (clearSystemPromptBtn) {
+                clearSystemPromptBtn.addEventListener('click', () => {
+                    clearSystemPromptStorage();
+                    if (systemPromptInput) {
+                        systemPromptInput.value = '';
+                    }
+                    if (typeof showNotification === 'function') {
+                        showNotification('✅ System prompt cleared!');
+                    }
+                });
+            }
+
+            if (systemPromptModal) {
+                systemPromptModal.addEventListener('click', (e) => {
+                    if (e.target === systemPromptModal) {
+                        systemPromptModal.style.display = 'none';
+                    }
+                });
+            }
 
         });
     </script>

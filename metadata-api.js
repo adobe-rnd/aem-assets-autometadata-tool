@@ -142,7 +142,7 @@ class MetadataAPI {
                 }
 
                 const result = await response.json();
-                return this.parseAzureAIResponse(result);
+                return this.parseAzureAIResponse(result, property);
 
             } catch (error) {
                 lastError = error;
@@ -209,24 +209,40 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
             console.log('🏷️ Prepended brand prompt to custom prompt');
         }
 
-        return {
-            messages: [
+        // Build messages with optional system prompt
+        const messages = [];
+
+        const systemPrompt = this.getSystemPrompt ? this.getSystemPrompt().trim() : '';
+        if (systemPrompt) {
+            messages.push({
+                role: "system",
+                content: [
+                    {
+                        type: "text",
+                        text: systemPrompt
+                    }
+                ]
+            });
+        }
+
+        messages.push({
+            role: "user",
+            content: [
                 {
-                    role: "user",
-                    content: [
-                        {
-                            type: "text",
-                            text: prompt
-                        },
-                        {
-                            type: "image_url",
-                            image_url: {
-                                url: imageUrl
-                            }
-                        }
-                    ]
+                    type: "text",
+                    text: prompt
+                },
+                {
+                    type: "image_url",
+                    image_url: {
+                        url: imageUrl
+                    }
                 }
-            ],
+            ]
+        });
+
+        return {
+            messages,
             max_tokens: 4096,
             temperature: 0.1,
             top_p: 1,
@@ -238,7 +254,7 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
      * Parse the Azure AI API response
      * @private
      */
-    parseAzureAIResponse(response) {
+    parseAzureAIResponse(response, property) {
         try {
             // Azure AI response format: response.choices[0].message.content
             const content = response.choices?.[0]?.message?.content;
@@ -261,15 +277,28 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
                 
                 const displayMessage = `📝 Raw Response: ${responseStr}`;
                 
-                if (customPrompts.length > 0) {
+                if (property && typeof property === 'string') {
+                    // Per-property: wrap raw response in the new object shape
+                    result[property] = {
+                        value: displayMessage,
+                        confidence_score: null
+                    };
+                    return result;
+                } else if (customPrompts.length > 0) {
                     // Populate all custom prompt fields with the raw response
                     customPrompts.forEach(promptConfig => {
-                        result[promptConfig.property] = displayMessage;
+                        result[promptConfig.property] = {
+                            value: displayMessage,
+                            confidence_score: null
+                        };
                     });
                     console.log(`📋 Populated ${customPrompts.length} custom fields with raw response`);
                 } else {
                     // Default field if no custom prompts (description only)
-                    result.description = displayMessage;
+                    result.description = {
+                        value: displayMessage,
+                        confidence_score: null
+                    };
                     console.log('📋 Populated default field (description) with raw response');
                 }
                 
@@ -283,11 +312,40 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
                 const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
                 metadata = JSON.parse(cleanContent);
                 
-                // Return structured JSON response
+                // If the parsed JSON matches the { <property>: <value>, confidence_score } shape
+                if (metadata && typeof metadata === 'object') {
+                    const score = (typeof metadata.confidence_score === 'number' && metadata.confidence_score >= 0 && metadata.confidence_score <= 1)
+                        ? metadata.confidence_score
+                        : null;
+                    // Determine the value key
+                    let valueKey = null;
+                    if (property && Object.prototype.hasOwnProperty.call(metadata, property)) {
+                        valueKey = property;
+                    } else {
+                        const keys = Object.keys(metadata).filter(k => k !== 'confidence_score' && k !== 'provider' && k !== 'generated_at');
+                        if (keys.length === 1) {
+                            valueKey = keys[0];
+                        }
+                    }
+                    if (valueKey) {
+                        const valueRaw = metadata[valueKey];
+                        const valueStr = typeof valueRaw === 'string' ? valueRaw : JSON.stringify(valueRaw);
+                        return {
+                            [valueKey]: {
+                                value: this.sanitizeString(valueStr || ''),
+                                confidence_score: score
+                            },
+                            provider: 'openai',
+                            generated_at: new Date().toISOString()
+                        };
+                    }
+                }
+                
+                // Legacy shape: Title/Description/Keywords
                 return {
-                    title: this.sanitizeString(metadata.Title || metadata.title || ''),
-                    description: this.sanitizeString(metadata.Description || metadata.description || ''),
-                    tags: this.sanitizeString(metadata.Keywords || metadata.keywords || metadata.tags || ''),
+                    title: { value: this.sanitizeString(metadata.Title || metadata.title || ''), confidence_score: null },
+                    description: { value: this.sanitizeString(metadata.Description || metadata.description || ''), confidence_score: null },
+                    tags: { value: this.sanitizeString(metadata.Keywords || metadata.keywords || metadata.tags || ''), confidence_score: null },
                     confidence: null,
                     processing_time: null,
                     provider: 'openai',
@@ -308,15 +366,27 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
                     generated_at: new Date().toISOString()
                 };
                 
-                if (customPrompts.length > 0) {
+                if (property && typeof property === 'string') {
+                    result[property] = {
+                        value: this.sanitizeString(content),
+                        confidence_score: null
+                    };
+                    return result;
+                } else if (customPrompts.length > 0) {
                     // Populate all custom prompt fields with the raw content
                     customPrompts.forEach(promptConfig => {
-                        result[promptConfig.property] = this.sanitizeString(content);
+                        result[promptConfig.property] = {
+                            value: this.sanitizeString(content),
+                            confidence_score: null
+                        };
                     });
                     console.log(`📋 Populated ${customPrompts.length} custom fields with raw content`);
                 } else {
                     // Default field if no custom prompts (description only)
-                    result.description = this.sanitizeString(content);
+                    result.description = {
+                        value: this.sanitizeString(content),
+                        confidence_score: null
+                    };
                     console.log('📋 Populated default field (description) with raw content');
                 }
                 
@@ -333,9 +403,9 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
      * Parse the API response (legacy method for compatibility)
      * @private
      */
-    parseAPIResponse(response, provider) {
+    parseAPIResponse(response, provider, property) {
         if (provider === 'openai') {
-            return this.parseAzureAIResponse(response);
+            return this.parseAzureAIResponse(response, property);
         }
         
         try {
@@ -397,6 +467,20 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
             return brandPrompt || '';
         } catch (error) {
             console.error('Error loading brand prompt:', error);
+            return '';
+        }
+    }
+
+    /**
+     * Get system prompt from localStorage
+     * @private
+     */
+    getSystemPrompt() {
+        try {
+            const systemPrompt = localStorage.getItem('systemPrompt');
+            return systemPrompt || '';
+        } catch (error) {
+            console.error('Error loading system prompt:', error);
             return '';
         }
     }

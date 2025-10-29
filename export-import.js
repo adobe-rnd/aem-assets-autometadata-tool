@@ -7,10 +7,31 @@
  * Export all metadata as JSON file
  */
 function exportAsJson() {
+    // Normalize to ensure all fields use { value, confidence_score }
+    const normalized = {};
+    Object.entries(imageMetadata).forEach(([key, data]) => {
+        const copy = { ...data };
+        if (copy.version1 && typeof copy.version1 === 'object') {
+            const v1 = {};
+            Object.entries(copy.version1).forEach(([prop, val]) => {
+                if (val && typeof val === 'object' && ('value' in val || 'confidence_score' in val)) {
+                    v1[prop] = {
+                        value: val.value !== undefined ? val.value : '',
+                        confidence_score: val.confidence_score !== undefined ? val.confidence_score : null
+                    };
+                } else {
+                    v1[prop] = { value: val !== undefined && val !== null ? val : '', confidence_score: null };
+                }
+            });
+            copy.version1 = v1;
+        }
+        normalized[key] = copy;
+    });
+
     const exportData = {
         exportDate: new Date().toISOString(),
-        totalImages: Object.keys(imageMetadata).length,
-        metadata: imageMetadata
+        totalImages: Object.keys(normalized).length,
+        metadata: normalized
     };
     
     const dataStr = JSON.stringify(exportData, null, 2);
@@ -48,10 +69,12 @@ function exportAsCsv() {
         allProperties.add('description');
     }
     
-    // Create dynamic headers
+    // Create dynamic headers (value + confidence)
     const headers = ['Index', 'Filename'];
     Array.from(allProperties).forEach(prop => {
-        headers.push(`AI - ${prop.charAt(0).toUpperCase() + prop.slice(1)}`);
+        const label = prop.charAt(0).toUpperCase() + prop.slice(1);
+        headers.push(`AI - ${label}`);
+        headers.push(`AI - ${label} Confidence`);
     });
     
     const csvData = [headers];
@@ -64,7 +87,19 @@ function exportAsCsv() {
         
         // Add dynamic property values
         Array.from(allProperties).forEach(prop => {
-            row.push(data.version1?.[prop] || '');
+            const entry = data.version1?.[prop];
+            let valueStr = '';
+            let confStr = '';
+            if (entry && typeof entry === 'object' && ('value' in entry)) {
+                valueStr = entry.value || '';
+                if (typeof entry.confidence_score === 'number' && entry.confidence_score >= 0 && entry.confidence_score <= 1) {
+                    confStr = String(entry.confidence_score);
+                }
+            } else if (entry !== undefined && entry !== null) {
+                valueStr = String(entry);
+            }
+            row.push(valueStr);
+            row.push(confStr);
         });
         
         csvData.push(row);
@@ -145,8 +180,25 @@ function updateMetadataInputs() {
                 // Update each field based on data-property attribute
                 columns[0].querySelectorAll('.metadata-input').forEach(input => {
                     const property = input.getAttribute('data-property');
-                    if (property && metadata.version1[property]) {
-                        input.value = metadata.version1[property];
+                    if (!property) return;
+                    const field = input.closest('.metadata-field');
+                    const pill = field ? field.querySelector('.confidence-pill') : null;
+                    const entry = metadata.version1[property];
+                    if (entry !== undefined) {
+                        if (entry && typeof entry === 'object' && ('value' in entry)) {
+                            input.value = entry.value || '';
+                            const score = ('confidence_score' in entry) ? entry.confidence_score : null;
+                            if (typeof window.applyConfidencePill === 'function') {
+                                window.applyConfidencePill(pill, score);
+                            } else if (pill) {
+                                // Minimal fallback: hide when no score
+                                pill.classList.toggle('confidence-pill--hidden', !(typeof score === 'number' && score >= 0 && score <= 1));
+                                if (typeof score === 'number') pill.textContent = Math.round(score * 100) + '%';
+                            }
+                        } else {
+                            input.value = entry || '';
+                            if (pill) pill.classList.add('confidence-pill--hidden');
+                        }
                     }
                 });
             }
