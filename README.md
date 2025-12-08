@@ -48,3 +48,4 @@ Notes:
 ## Contributing
 
 Please follow the contribution guidelines when adding new prompts. 
+
