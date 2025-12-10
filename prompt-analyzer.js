@@ -48,6 +48,7 @@ EVALUATION CRITERIA (Score each 0-100)
 1. TASK CLARITY (Weight: 20%)
    - Is it crystal clear what value/attribute the LLM should extract?
    - Is the task specific and unambiguous?
+   - Are critical rules emphasized or repeated ("double down" on important rules)?
    - Would someone unfamiliar with the domain understand what to do?
    - Is the prompt free of contradictory statements or instructions?
 
@@ -55,16 +56,18 @@ EVALUATION CRITERIA (Score each 0-100)
 
 2. VALID VALUES (Weight: 20%)
    - If categorical, are all valid/allowed values explicitly listed?
+   - Are value constraints clear (e.g., "choose exactly ONE", "select up to 3", "select all that apply")?
    - Are categories and words that are used as constraints all clearly defined?
-   - Are value constraints clear (e.g., "choose ONE from this list")?
    - Is it clear what type of value is expected (single word, phrase, etc.)?
+   - If multiple selection methods exist, is precedence defined?
 
    RED FLAGS: No enumeration of allowed values, unclear if single or multiple values expected
 
 3. EMPTY/NULL HANDLING (Weight: 20%)
    - Does it specify what to return when the attribute is not found?
    - Does it specify what to return when the attribute doesn't apply?
-   - Does it use concrete language ("return empty string", "return null") vs vague ("leave blank")?
+   - Does it use concrete language ("return empty string", "return 'not found'") vs vague ("leave blank")?
+   - Does it give the LLM an "out" for uncertain cases, when it doesn't have a clear solution?
 
    RED FLAGS: No mention of edge cases, ambiguous instructions for missing values
 
@@ -73,6 +76,7 @@ EVALUATION CRITERIA (Score each 0-100)
    - Does it say "NO explanations", "NO guessing", "NO commentary"?
    - Does it forbid hallucinating or making assumptions?
    - Does it forbid adding unwanted formatting or markdown?
+   - Does it forbid inventing values outside the provided list?
 
    RED FLAGS: Only says what TO do, never what NOT to do
 
@@ -87,9 +91,38 @@ EVALUATION CRITERIA (Score each 0-100)
    - Is the prompt organized into clear sections?
    - Is it scannable (not a wall of text)?
    - Is the length appropriate (not too short, not excessively long)?
-   - Are critical rules emphasized or repeated?
+   - Is instruction order logical (instructions before content)?
 
    RED FLAGS: Wall of text, no structure, critical rules buried or mentioned only once
+
+═══════════════════════════════════════════════════════════════════════════════
+RULES FOR ENHANCING PROMPTS
+═══════════════════════════════════════════════════════════════════════════════
+
+DO:
+- Preserve the user's intent completely
+- Prefer brand lexicon over generic synonyms (e.g., "AirMax 2024" vs "sneaker")
+- Keep each list item on its own line if the original had them that way
+- Fix obvious misspellings, but leave brand-specific terms/names as-is
+- Add relevant examples if none exist
+- Improve weak or generic examples if you have enough context
+- Clarify single vs. multiple value selection (exactly 1, up to N, all that apply)
+- Add fallback instructions ("if uncertain, return 'unknown'")
+- Repeat critical rules at the end as a reminder ("double down")
+
+DO NOT:
+- Change the user's intent or meaning
+- Alter the spelling/grammar of values in user-provided lists (assume exact match required)
+- Invent definitions or vocabularies outside what the user provided
+- Use competitor brand names (if prompt is for Adidas, don't mention Nike)
+- Add verbose reasoning or explanations to the prompt itself
+- Infer sensitive attributes or include inappropriate content
+- Suggest visual references (users cannot provide images in prompts)
+- Assume definitions for unclear terms - instead, flag for user clarification
+
+CONFLICT RESOLUTION:
+- If the prompt has contradicting instructions and you can clearly resolve them, do so
+- If the conflict is ambiguous, do NOT guess - flag it for the user to clarify
 
 ═══════════════════════════════════════════════════════════════════════════════
 YOUR TASK
@@ -111,15 +144,14 @@ Analyze the CUSTOM PROMPT below (considering the brand context above) and provid
 3. ENHANCED PROMPT
    - Rewrite the CUSTOM PROMPT only (not the brand prompt)
    - Preserve the user's intent completely
-   - Add missing elements (format spec, examples, constraints, rules)
-   - Structure with clear sections: TASK, RULES, OUTPUT FORMAT, EXAMPLES, REMINDER
-   - Consider how it will work together with the brand prompt
-   - Maintain formatting of any included lists. (For example, if there is a list of categories and each category is separated by a new line, keep that formatting for that list.)
-   - FORMAT WITH LINE BREAKS: Use \\n for newlines to create readable structure:
-     * Put each section header (TASK:, RULES:, OUTPUT FORMAT:, etc.) on its own line
+   - Apply the enhancement rules above
+   - Structure with clear sections: TASK, RULES, EXAMPLES, REMINDER
+   - FORMAT WITH LINE BREAKS: Use \\n for newlines:
+     * Put each section header on its own line
      * Put each numbered rule on its own line
      * Add blank lines between major sections
-     * Example: "TASK: Extract color.\\n\\nRULES:\\n1. Return only one color.\\n2. Use lowercase.\\n\\nOUTPUT FORMAT:\\n..."
+   - Maintain formatting of any included lists. (For example, if there is a list of categories and each category is separated by a new line, keep that formatting for that list.)
+   - FORMAT WITH LINE BREAKS: Use \\n for newlines to create readable structure:
 
 4. CHANGES MADE
    - List each improvement made
@@ -636,7 +668,6 @@ async function showPromptAnalyzerModal(promptId, promptText) {
     currentAnalysisType = 'custom';
 
     const modal = document.getElementById('promptAnalyzerModal');
-    const modalTitle = document.getElementById('analyzerModalTitle');
     const originalPromptLabel = document.getElementById('analyzerOriginalPromptLabel');
     const originalPromptEl = document.getElementById('analyzerOriginalPrompt');
     const loadingEl = document.getElementById('analyzerLoading');
@@ -653,8 +684,7 @@ async function showPromptAnalyzerModal(promptId, promptText) {
         analyzeBtn.disabled = true;
     }
 
-    // Update modal title and labels for custom prompt analysis
-    if (modalTitle) modalTitle.textContent = '🔍 Custom Prompt Analyzer';
+    // Update label for custom prompt analysis
     if (originalPromptLabel) originalPromptLabel.textContent = 'Your Custom Prompt:';
 
     // Reset modal state
@@ -713,7 +743,6 @@ async function showBrandAnalyzerModal(brandPromptText) {
     currentAnalysisType = 'brand';
 
     const modal = document.getElementById('promptAnalyzerModal');
-    const modalTitle = document.getElementById('analyzerModalTitle');
     const originalPromptLabel = document.getElementById('analyzerOriginalPromptLabel');
     const originalPromptEl = document.getElementById('analyzerOriginalPrompt');
     const loadingEl = document.getElementById('analyzerLoading');
@@ -730,8 +759,7 @@ async function showBrandAnalyzerModal(brandPromptText) {
         analyzeBtn.disabled = true;
     }
 
-    // Update modal title and labels for brand analysis
-    if (modalTitle) modalTitle.textContent = '🏷️ Brand Prompt Analyzer';
+    // Update label for brand analysis
     if (originalPromptLabel) originalPromptLabel.textContent = 'Your Brand Prompt:';
 
     // Reset modal state
@@ -847,13 +875,9 @@ function populateAnalyzerResults(result) {
         issuesCountEl.textContent = `(${result.issues.length})`;
         result.issues.forEach(issue => {
             const severityClass = `issue-${issue.severity.toLowerCase()}`;
-            const severityIcon = getSeverityIcon(issue.severity);
             issuesEl.innerHTML += `
                 <div class="issue-item ${severityClass}">
-                    <div class="issue-severity">${severityIcon} ${issue.severity}</div>
-                    <div class="issue-problem">${issue.problem}</div>
-                    <div class="issue-impact"><strong>Impact:</strong> ${issue.impact}</div>
-                    <div class="issue-fix"><strong>Fix:</strong> ${issue.fix}</div>
+                    <div class="issue-fix">${issue.fix}</div>
                 </div>
             `;
         });
@@ -862,7 +886,7 @@ function populateAnalyzerResults(result) {
         issuesToggle.classList.remove('expanded');
     } else {
         issuesCountEl.textContent = '(0)';
-        issuesEl.innerHTML = '<p class="no-issues">✅ No significant issues found!</p>';
+        issuesEl.innerHTML = '<p class="no-issues">✅ No suggestions - your prompt looks great!</p>';
         // Show "no issues" message expanded
         issuesEl.classList.remove('collapsed');
         issuesToggle.classList.add('expanded');
