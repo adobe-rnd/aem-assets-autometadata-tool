@@ -55,6 +55,87 @@ class MetadataAPI {
     }
 
     /**
+     * Enhance a prompt using AI (text-only call to AI, no image)
+     * @param {string} userPrompt - The user's original prompt to enhance
+     * @returns {Promise<Object>} Promise resolving to { enhancedPrompt, score, improvements, contextSuggestions }
+     */
+    async enhancePrompt(userPrompt) {
+        const baseUrl = this.config.openaiUrl || this.config.openApiUrl;
+        const deployment = this.config.deployment;
+        const apiVersion = this.config.apiVersion;
+
+        if (!baseUrl || !deployment || !apiVersion || baseUrl.includes('your-')) {
+            throw new Error('Azure AI configuration incomplete');
+        }
+
+        const url = `${baseUrl}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
+
+        // Use prompts from prompts.js
+        const systemPrompt = PROMPTS.ENHANCE_SYSTEM;
+        const userMessage = userPrompt; // Send user's prompt as-is
+
+        const payload = {
+            messages: [
+                {
+                    role: "system",
+                    content: systemPrompt
+                },
+                {
+                    role: "user",
+                    content: userMessage
+                }
+            ],
+            max_tokens: 2048,
+            temperature: 0.7,
+            top_p: 1,
+            model: this.config.modelName || "gpt-4-vision-preview"
+        };
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': this.config.apiKey ? `Bearer ${this.config.apiKey}` : ''
+                },
+                body: JSON.stringify(payload),
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
+            }
+
+            const result = await response.json();
+            const content = result.choices?.[0]?.message?.content;
+
+            if (!content) {
+                throw new Error('No content in AI response');
+            }
+
+            // Parse the JSON response
+            const parsed = JSON.parse(content);
+
+            return {
+                enhancedPrompt: parsed.enhancedPrompt || '',
+                score: parsed.score || 0,
+                improvements: parsed.improvements || [],
+                contextSuggestions: parsed.contextSuggestions || []
+            };
+
+        } catch (error) {
+            console.error('Error enhancing prompt:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Generate metadata for an image using Llama
      * @param {string} imageUrl - URL or base64 data of the image
      * @param {Object} imageInfo - Additional image information
@@ -437,23 +518,13 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
             if (stored) {
                 return JSON.parse(stored);
             } else {
-                // First time opening the app - return default description-only custom prompt
-                return [
-                    {
-                        property: 'description',
-                        prompt: 'Generate a detailed description for this image. Focus on the main subject, setting, activity, key visual elements, and any visible text or numeric values. Provide 3-5 sentences that would help someone understand what this image contains.'
-                    }
-                ];
+                // First time opening the app - use defaults from prompts.js
+                return getDefaultCustomPromptsArray();
             }
         } catch (error) {
             console.error('Error loading custom prompts:', error);
-            // Fallback to description-only even on error
-            return [
-                {
-                    property: 'description',
-                    prompt: 'Generate a detailed description for this image.'
-                }
-            ];
+            // On error, return defaults from prompts.js
+            return getDefaultCustomPromptsArray();
         }
     }
 
@@ -490,13 +561,8 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
      * @private
      */
     getDefaultPromptForProperty(property) {
-        const defaultPrompts = {
-            'title': 'Generate a concise, editorial title (6-10 words) for this image. Focus on the main subject and key visual elements. Only include brand names if they are unmistakably visible. Return only the title text, no additional formatting or explanation.',
-            'description': 'Write a detailed description (3-5 sentences) of this image. Start with the main subject, then describe the setting/activity, and finally mention key visual elements. Include any visible numeric values with their units. Return only the description text, no additional formatting or explanation.',
-            'keywords': 'Generate up to 12 relevant keywords for this image. Prioritize single keywords first, use multi-word phrases only when contextually necessary. Include visible numeric values with units. Exclude: logo, brand, branding, packaging. Return only the keywords as comma-separated text, no additional formatting or explanation.'
-        };
-        
-        return defaultPrompts[property.toLowerCase()] || `Analyze this image and provide relevant ${property} information. Return only the ${property} text, no additional formatting or explanation.`;
+        // Delegate to the global function from prompts.js
+        return window.getDefaultPromptForProperty(property);
     }
 
     /**

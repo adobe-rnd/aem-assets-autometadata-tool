@@ -11,13 +11,7 @@
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico', 'tiff', 'tif'];
 const IMAGES_PER_BATCH = 100;
 
-// Default custom prompts for first-time users
-const DEFAULT_CUSTOM_PROMPTS = [
-    {
-        property: 'description',
-        prompt: 'Generate a detailed description for this image. Focus on the main subject, setting, activity, key visual elements, and any visible text or numeric values. Provide 3-5 sentences that would help someone understand what this image contains.'
-    }
-];
+const DEFAULT_CUSTOM_PROMPTS = getDefaultCustomPromptsArray();
 
 const DEFAULT_CONFIG = {
     openaiUrl: 'https://your-resource.openai.azure.com',
@@ -26,26 +20,7 @@ const DEFAULT_CONFIG = {
     deployment: 'your-deployment-name',
     apiKey: 'your-api-key-here',
     timeout: 30000, // in milliseconds
-    customPrompt: `Enrich asset metadata for discoverability.
-
-FACETS (use only when clearly visible):
-1. Product/type/model/brand
-2. Setting/activity/visuals
-3. Mood/palette/style
-4. People: age, gender, demography
-5. Visible text or logos — NEVER make assumptions or name brands that are not absolutely clearly identifiable in the image or overlay/on-pack text
-6. All numbers that appear Explicitely on image/overlay (e.g., "500 ml", "v25.3", "iPhone 6")
-
-OUTPUT:
-• TITLE (6–10 words) – concise, editorial; name brand only if unmistakable.
-• DESCRIPTION (3–5 sentences) – main subject → setting/activity → key visuals; include visible numeric concepts.
-• KEYWORDS (up to 12) – prioratize single keywords first; use multi-word only when required contextually (e.g., "soccer player").
-
-RULES:
-• All numeric values MUST be tagged with their complete unit or metric as a single keyword Only if Clearly seen in the image/text ("15 oz", "120 ml").
-• The following keywords Must be Removed from the keywords list: "logo", "brand", "branding", "packaging" .
-
-Return in pretty-print JSON format. Do not add Markdown or code block formatting. Use exactly these keys: 'Title' (string), 'Description' (string), and 'Keywords' (string containing a comma-separated list of tags`
+    customPrompt: PROMPTS.DEFAULT_METADATA
 };
 
 // Function to load default configuration

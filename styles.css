@@ -372,6 +372,219 @@
             background: #c82333;
         }
 
+        .enhance-prompt-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .enhance-prompt-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .enhance-prompt-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Action cell styling for custom prompts table */
+        .custom-prompts-table td:last-child {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Enhancement results modal */
+        .enhancement-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .enhancement-modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 1200px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .enhancement-modal-content h2 {
+            margin: 0 0 20px 0;
+            color: #333;
+        }
+
+        .enhancement-score-box {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f0f8ff;
+            border-left: 4px solid #007bff;
+            border-radius: 4px;
+        }
+
+        .enhancement-score-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #007bff;
+        }
+
+        .enhancement-score-value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .enhancement-score-high {
+            color: #28a745;
+        }
+
+        .enhancement-score-medium {
+            color: #ffc107;
+        }
+
+        .enhancement-score-low {
+            color: #dc3545;
+        }
+
+        .enhancement-improvements-box {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 4px;
+        }
+
+        .enhancement-improvements-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #856404;
+        }
+
+        .enhancement-improvements-box ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .enhancement-improvements-box li {
+            margin-bottom: 8px;
+        }
+
+        .enhancement-questions-box {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-left: 4px solid #2196f3;
+            border-radius: 4px;
+        }
+
+        .enhancement-questions-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #0d47a1;
+        }
+
+        .enhancement-questions-box ul {
+            margin: 0 0 10px 0;
+            padding-left: 20px;
+        }
+
+        .enhancement-questions-box li {
+            margin-bottom: 8px;
+        }
+
+        .enhancement-questions-note {
+            margin: 0;
+            font-size: 13px;
+            color: #1565c0;
+            font-style: italic;
+        }
+
+        .enhancement-prompts-comparison {
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .enhancement-prompt-box {
+            padding: 15px;
+            border-radius: 4px;
+        }
+
+        .enhancement-prompt-box.original {
+            background: #f8f9fa;
+            border-left: 4px solid #6c757d;
+        }
+
+        .enhancement-prompt-box.enhanced {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+
+        .enhancement-prompt-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+
+        .enhancement-prompt-box.original h3 {
+            color: #495057;
+        }
+
+        .enhancement-prompt-box.enhanced h3 {
+            color: #155724;
+        }
+
+        .enhancement-prompt-text {
+            background: white;
+            padding: 12px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 13px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .enhancement-modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .enhancement-modal-buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .enhancement-cancel-btn {
+            background: #6c757d;
+            color: white;
+        }
+
+        .enhancement-apply-btn {
+            background: #28a745;
+            color: white;
+        }
+
         .info-text {
             color: #000000;
             font-size: 0.9em;

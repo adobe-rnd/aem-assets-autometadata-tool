@@ -277,16 +277,158 @@ function renderCustomPromptsList() {
         
         // Action cell
         const actionCell = document.createElement('td');
+
+        const enhanceBtn = document.createElement('button');
+        enhanceBtn.className = 'enhance-prompt-btn';
+        enhanceBtn.textContent = '✨ Enhance Prompt';
+        enhanceBtn.addEventListener('click', (e) => enhancePromptWithAI(prompt.id, e.target));
+        actionCell.appendChild(enhanceBtn);
+
         const removeBtn = document.createElement('button');
         removeBtn.className = 'remove-prompt-btn';
         removeBtn.textContent = '✖ Remove';
         removeBtn.addEventListener('click', () => removeCustomPrompt(prompt.id));
         actionCell.appendChild(removeBtn);
-        
+
         row.appendChild(propertyCell);
         row.appendChild(promptCell);
         row.appendChild(actionCell);
         tbody.appendChild(row);
+    });
+}
+
+/**
+ * Enhance a prompt using AI
+ * @param {string} id - The ID of the prompt to enhance
+ */
+async function enhancePromptWithAI(id, buttonElement) {
+    const prompt = customPrompts.find(p => p.id === id);
+    if (!prompt || !prompt.prompt.trim()) {
+        showNotification('⚠️ Please enter a prompt before enhancing', 'error');
+        return;
+    }
+
+    // Find the button and show loading state
+    const enhanceBtn = buttonElement || event.target;
+    const originalText = enhanceBtn.textContent;
+    enhanceBtn.textContent = '⏳ Enhancing...';
+    enhanceBtn.disabled = true;
+
+    try {
+        // Get the metadataAPI instance from the global scope
+        if (typeof metadataAPI === 'undefined') {
+            throw new Error('Metadata API not initialized');
+        }
+
+        // Call the AI to enhance the prompt
+        const result = await metadataAPI.enhancePrompt(prompt.prompt);
+
+        // Show a modal with the results (pass original prompt for comparison)
+        showEnhancementResults(id, result, prompt.prompt);
+
+    } catch (error) {
+        console.error('Error enhancing prompt:', error);
+        showNotification('❌ Failed to enhance prompt: ' + error.message, 'error');
+    } finally {
+        // Restore button state
+        enhanceBtn.textContent = originalText;
+        enhanceBtn.disabled = false;
+    }
+}
+
+/**
+ * Show enhancement results in a modal
+ * @param {string} promptId - The ID of the prompt being enhanced
+ * @param {Object} result - The enhancement result from AI
+ * @param {string} originalPrompt - The original prompt text for comparison
+ */
+function showEnhancementResults(promptId, result, originalPrompt) {
+    // Create modal overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'enhancement-modal-overlay';
+
+    // Create modal content
+    const modal = document.createElement('div');
+    modal.className = 'enhancement-modal-content';
+
+    // Determine score class
+    const scoreClass = result.score >= 70 ? 'enhancement-score-high' :
+                       result.score >= 40 ? 'enhancement-score-medium' :
+                       'enhancement-score-low';
+
+    // Build the modal HTML
+    modal.innerHTML = `
+        <h2>✨ Prompt Enhancement Results</h2>
+
+        <div class="enhancement-score-box">
+            <h3>📊 Quality Score</h3>
+            <div class="enhancement-score-value ${scoreClass}">
+                ${result.score}/100
+            </div>
+        </div>
+
+        <div class="enhancement-improvements-box">
+            <h3>🔧 Improvements Made</h3>
+            <ul>
+                ${result.improvements.map(imp => `<li>${imp}</li>`).join('')}
+            </ul>
+        </div>
+
+        ${result.contextSuggestions && result.contextSuggestions.length > 0 ? `
+        <div class="enhancement-questions-box">
+            <h3>💡 Context Suggestions</h3>
+            <ul>
+                ${result.contextSuggestions.map(q => `<li>${q}</li>`).join('')}
+            </ul>
+            <p class="enhancement-questions-note">Consider these suggestions to further improve your prompt.</p>
+        </div>
+        ` : ''}
+
+        <div class="enhancement-prompts-comparison">
+            <div class="enhancement-prompt-box original">
+                <h3>📝 Original Prompt</h3>
+                <div class="enhancement-prompt-text">${originalPrompt}</div>
+            </div>
+            <div class="enhancement-prompt-box enhanced">
+                <h3>✅ Enhanced Prompt</h3>
+                <div class="enhancement-prompt-text">${result.enhancedPrompt}</div>
+            </div>
+        </div>
+
+        <div class="enhancement-modal-buttons">
+            <button id="cancelEnhancement" class="enhancement-cancel-btn">
+                ❌ Cancel
+            </button>
+            <button id="applyEnhancement" class="enhancement-apply-btn">
+                ✅ Apply Enhancement
+            </button>
+        </div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Add event listeners
+    document.getElementById('cancelEnhancement').addEventListener('click', () => {
+        document.body.removeChild(overlay);
+    });
+
+    document.getElementById('applyEnhancement').addEventListener('click', () => {
+        // Update the prompt with the enhanced version
+        const prompt = customPrompts.find(p => p.id === promptId);
+        if (prompt) {
+            prompt.prompt = result.enhancedPrompt;
+            renderCustomPromptsList();
+            showNotification('✅ Enhanced prompt applied successfully!', 'success');
+        }
+        document.body.removeChild(overlay);
+    });
+
+    // Close on overlay click
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            document.body.removeChild(overlay);
+        }
     });
 }
 
@@ -299,10 +441,10 @@ function addCustomPrompt() {
         property: '',
         prompt: ''
     };
-    
+
     customPrompts.push(newPrompt);
     renderCustomPromptsList();
-    
+
     console.log('➕ Added new custom prompt');
 }
 
@@ -573,4 +715,6 @@ window.loadBrandPrompt = loadBrandPrompt;
 window.saveBrandPrompt = saveBrandPrompt;
 window.clearBrandPrompt = clearBrandPrompt;
 window.getBrandPrompt = getBrandPrompt;
-window.autoExpandBrandPrompt = autoExpandBrandPrompt; 
+window.autoExpandBrandPrompt = autoExpandBrandPrompt;
+window.enhancePromptWithAI = enhancePromptWithAI;
+window.showEnhancementResults = showEnhancementResults;
