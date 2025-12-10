@@ -67,7 +67,7 @@ EVALUATION CRITERIA (Score each 0-100)
    - Does it specify what to return when the attribute is not found?
    - Does it specify what to return when the attribute doesn't apply?
    - Does it use concrete language ("return empty string", "return 'not found'") vs vague ("leave blank")?
-   - Does it give the LLM an "out" for uncertain cases, when it doesn't have a clear solution?
+   - Does it give the LLM an "out" for uncertain cases where it doesn't have a clear solution?
 
    RED FLAGS: No mention of edge cases, ambiguous instructions for missing values
 
@@ -146,12 +146,12 @@ Analyze the CUSTOM PROMPT below (considering the brand context above) and provid
    - Preserve the user's intent completely
    - Apply the enhancement rules above
    - Structure with clear sections: TASK, RULES, EXAMPLES, REMINDER
-   - FORMAT WITH LINE BREAKS: Use \\n for newlines:
+   - FORMAT WITH LINE BREAKS: Use \\n for new lines:
      * Put each section header on its own line
      * Put each numbered rule on its own line
      * Add blank lines between major sections
+     * Example: "TASK: Extract color.\\n\\nRULES:\\n1. Return only one color.\\n2. Use lowercase.\\n\\nEXAMPLES:\\n..."
    - Maintain formatting of any included lists. (For example, if there is a list of categories and each category is separated by a new line, keep that formatting for that list.)
-   - FORMAT WITH LINE BREAKS: Use \\n for newlines to create readable structure:
 
 4. CHANGES MADE
    - List each improvement made
