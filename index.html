@@ -43,6 +43,7 @@
                     
                     <div class="brand-prompt-buttons">
                         <button id="saveBrandPromptBtn" class="custom-prompt-btn">💾 Save Brand Prompt</button>
+                        <button id="analyzeBrandPromptBtn" class="custom-prompt-btn analyze-prompt-btn">🔍 Analyze</button>
                         <button id="clearBrandPromptBtn" class="custom-prompt-btn reset-btn">🗑️ Clear</button>
                     </div>
                 </div>
@@ -250,6 +251,78 @@
         </div>
     </div>
 
+    <!-- Prompt Analyzer Modal -->
+    <div id="promptAnalyzerModal" class="api-config-modal">
+        <div class="api-config-content analyzer-modal-content">
+            <span class="close" id="analyzerModalClose" style="position: absolute; top: 15px; right: 20px;">&times;</span>
+            <h3 id="analyzerModalTitle" class="analyzer-modal-title">🔍 Prompt Analyzer</h3>
+
+            <!-- Original Prompt Section -->
+            <div class="analyzer-section">
+                <h4 id="analyzerOriginalPromptLabel" class="analyzer-section-title">Your Original Prompt</h4>
+                <div id="analyzerOriginalPrompt" class="analyzer-prompt-display"></div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="analyzerLoading" class="analyzer-loading">
+                <div class="analyzer-spinner"></div>
+                <p>Analyzing your prompt...</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="analyzerError" class="analyzer-error" style="display: none;"></div>
+
+            <!-- Results Section (hidden until loaded) -->
+            <div id="analyzerResults" style="display: none;">
+
+                <!-- Score Section -->
+                <div class="analyzer-section analyzer-score-section">
+                    <div class="score-display-compact">
+                        <div class="score-circle-small" id="analyzerScoreCircle">
+                            <span id="analyzerScoreValue">--</span>
+                        </div>
+                        <div class="score-breakdown-chips" id="analyzerBreakdown">
+                            <!-- Breakdown chips will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Prompt Section -->
+                <div class="analyzer-section">
+                    <h4 class="analyzer-section-title">✨ Enhanced Prompt</h4>
+                    <div id="analyzerEnhancedPrompt" class="analyzer-enhanced-prompt"></div>
+                </div>
+
+                <!-- Summary Section -->
+                <div class="analyzer-section">
+                    <h4 class="analyzer-section-title">Summary</h4>
+                    <p id="analyzerSummary" class="analyzer-summary"></p>
+                </div>
+
+                <!-- Issues Section (Collapsible) -->
+                <div class="analyzer-section analyzer-issues-section">
+                    <div class="issues-header" id="issuesToggle">
+                        <h4 class="analyzer-section-title">Issues Found <span id="issuesCount"></span></h4>
+                        <span class="issues-toggle-icon">▼</span>
+                    </div>
+                    <div id="analyzerIssues" class="analyzer-issues-list collapsed">
+                        <!-- Issues will be inserted here -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="analyzer-buttons">
+                <button id="applyEnhancedPromptBtn" class="apply-enhanced-btn" style="display: none;">
+                    ✨ Apply Enhanced Prompt
+                </button>
+                <button id="closeAnalyzerBtn" class="export-button" style="background: #6c757d;">Close</button>
+            </div>
+
+        </div>
+    </div>
+
     <!-- Include the Metadata API -->
     <script src="metadata-api.js"></script>
     
@@ -261,7 +334,10 @@
     
     <!-- Include Custom Prompts Management -->
     <script src="custom-prompts.js"></script>
-    
+
+    <!-- Include Prompt Analyzer -->
+    <script src="prompt-analyzer.js"></script>
+
     <!-- Include Export/Import Functionality -->
     <script src="export-import.js"></script>
     

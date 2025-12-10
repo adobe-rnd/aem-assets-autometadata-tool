@@ -272,11 +272,33 @@ function renderCustomPromptsList() {
         promptTextarea.className = 'prompt-text-input';
         promptTextarea.value = prompt.prompt || '';
         promptTextarea.placeholder = 'Enter your custom prompt for this property...';
+        promptTextarea.dataset.promptId = prompt.id;  // Add data attribute for prompt analyzer
         promptTextarea.addEventListener('input', (e) => updateCustomPromptText(prompt.id, e.target.value));
         promptCell.appendChild(promptTextarea);
-        
+
         // Action cell
         const actionCell = document.createElement('td');
+
+        // Analyze button (for prompt analyzer feature)
+        const analyzeBtn = document.createElement('button');
+        analyzeBtn.className = 'analyze-prompt-btn';
+        analyzeBtn.textContent = '🔍 Analyze';
+        analyzeBtn.dataset.promptId = prompt.id;  // Add data attribute for finding button later
+        analyzeBtn.addEventListener('click', () => {
+            // Only analyze if there's prompt text
+            if (prompt.prompt && prompt.prompt.trim()) {
+                if (typeof showPromptAnalyzerModal === 'function') {
+                    showPromptAnalyzerModal(prompt.id, prompt.prompt);
+                } else {
+                    showNotification('⚠️ Prompt analyzer not available', 'warning');
+                }
+            } else {
+                showNotification('⚠️ Please enter a prompt before analyzing', 'warning');
+            }
+        });
+        actionCell.appendChild(analyzeBtn);
+
+        // Remove button
         const removeBtn = document.createElement('button');
         removeBtn.className = 'remove-prompt-btn';
         removeBtn.textContent = '✖ Remove';
@@ -438,6 +460,7 @@ function initializeCustomPromptsHandlers() {
     
     // Get DOM elements for brand prompt
     const saveBrandPromptBtn = document.getElementById('saveBrandPromptBtn');
+    const analyzeBrandPromptBtn = document.getElementById('analyzeBrandPromptBtn');
     const clearBrandPromptBtn = document.getElementById('clearBrandPromptBtn');
     const brandPromptInput = document.getElementById('brandPromptInput');
 
@@ -498,6 +521,24 @@ function initializeCustomPromptsHandlers() {
         saveBrandPromptBtn.addEventListener('click', saveBrandPrompt);
     }
 
+    if (analyzeBrandPromptBtn) {
+        analyzeBrandPromptBtn.addEventListener('click', () => {
+            const brandText = brandPromptInput ? brandPromptInput.value.trim() : '';
+
+            if (!brandText) {
+                showNotification('⚠️ No brand prompt to analyze. Please enter a brand prompt first.', 'warning');
+                return;
+            }
+
+            // Call the brand analyzer modal from prompt-analyzer.js
+            if (typeof window.showBrandAnalyzerModal === 'function') {
+                window.showBrandAnalyzerModal(brandText);
+            } else {
+                showNotification('❌ Prompt analyzer not available', 'error');
+            }
+        });
+    }
+
     if (clearBrandPromptBtn) {
         clearBrandPromptBtn.addEventListener('click', clearBrandPrompt);
     }
@@ -554,10 +595,37 @@ if (typeof module !== 'undefined' && module.exports) {
     };
 }
 
+/**
+ * Get the current custom prompts array (for external access)
+ * @returns {Array} - The custom prompts array
+ */
+function getCustomPrompts() {
+    return customPrompts;
+}
+
+/**
+ * Update a specific prompt's text by ID (for external access, e.g., prompt analyzer)
+ * @param {string} id - The prompt ID
+ * @param {string} newPromptText - The new prompt text
+ */
+function setPromptTextById(id, newPromptText) {
+    const prompt = customPrompts.find(p => p.id === id);
+    if (prompt) {
+        prompt.prompt = newPromptText;
+        // Also update the textarea in the UI if visible
+        const textarea = document.querySelector(`textarea[data-prompt-id="${id}"]`);
+        if (textarea) {
+            textarea.value = newPromptText;
+        }
+    }
+}
+
 // Expose functions globally for browser compatibility
 window.showCustomPromptsModal = showCustomPromptsModal;
 window.loadCustomPrompts = loadCustomPrompts;
 window.saveCustomPrompts = saveCustomPrompts;
+window.getCustomPrompts = getCustomPrompts;
+window.setPromptTextById = setPromptTextById;
 window.renderCustomPromptsList = renderCustomPromptsList;
 window.addCustomPrompt = addCustomPrompt;
 window.removeCustomPrompt = removeCustomPrompt;
