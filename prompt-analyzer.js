@@ -47,15 +47,17 @@ EVALUATION CRITERIA (Score each 0-100)
 
 2. VALID VALUES (Weight: 20%)
    - If categorical, are all valid/allowed values explicitly listed?
-   - Are value constraints clear (e.g., "choose ONE from this list")?
+   - Are value constraints clear (e.g., "choose exactly ONE", "select up to 3", "select all that apply")?
    - Is it clear what type of value is expected (single word, phrase, etc.)?
+   - If multiple selection methods exist, is precedence defined?
 
    RED FLAGS: No enumeration of allowed values, unclear if single or multiple values expected
 
 3. EMPTY/NULL HANDLING (Weight: 20%)
    - Does it specify what to return when the attribute is not found?
    - Does it specify what to return when the attribute doesn't apply?
-   - Does it use concrete language ("return empty string", "return null") vs vague ("leave blank")?
+   - Does it use concrete language ("return empty string", "return 'not found'") vs vague ("leave blank")?
+   - Does it give the LLM an "out" for uncertain cases?
 
    RED FLAGS: No mention of edge cases, ambiguous instructions for missing values
 
@@ -63,6 +65,7 @@ EVALUATION CRITERIA (Score each 0-100)
    - Does it explicitly forbid unwanted behaviors?
    - Does it say "NO explanations", "NO guessing", "NO commentary"?
    - Does it forbid hallucinating or making assumptions?
+   - Does it forbid inventing values outside the provided list?
 
    RED FLAGS: Only says what TO do, never what NOT to do
 
@@ -77,9 +80,39 @@ EVALUATION CRITERIA (Score each 0-100)
    - Is the prompt organized into clear sections?
    - Is it scannable (not a wall of text)?
    - Is the length appropriate (not too short, not excessively long)?
-   - Are critical rules emphasized or repeated?
+   - Are critical rules emphasized or repeated ("double down" on important rules)?
+   - Is instruction order logical (instructions before content)?
 
    RED FLAGS: Wall of text, no structure, critical rules buried or mentioned only once
+
+═══════════════════════════════════════════════════════════════════════════════
+RULES FOR ENHANCING PROMPTS
+═══════════════════════════════════════════════════════════════════════════════
+
+DO:
+- Preserve the user's intent completely
+- Prefer brand lexicon over generic synonyms (e.g., "AirMax 2024" vs "sneaker")
+- Keep each list item on its own line if the original had them that way
+- Fix obvious misspellings, but leave brand-specific terms/names as-is
+- Add relevant examples if none exist
+- Improve weak or generic examples if you have enough context
+- Clarify single vs. multiple value selection (exactly 1, up to N, all that apply)
+- Add fallback instructions ("if uncertain, return 'unknown'")
+- Repeat critical rules at the end as a reminder ("double down")
+
+DO NOT:
+- Change the user's intent or meaning
+- Alter the spelling/grammar of values in user-provided lists (assume exact match required)
+- Invent definitions or vocabularies outside what the user provided
+- Use competitor brand names (if prompt is for Adidas, don't mention Nike)
+- Add verbose reasoning or explanations to the prompt itself
+- Infer sensitive attributes or include inappropriate content
+- Suggest visual references (users cannot provide images in prompts)
+- Assume definitions for unclear terms - instead, flag for user clarification
+
+CONFLICT RESOLUTION:
+- If the prompt has contradicting instructions and you can clearly resolve them, do so
+- If the conflict is ambiguous, do NOT guess - flag it for the user to clarify
 
 ═══════════════════════════════════════════════════════════════════════════════
 YOUR TASK
@@ -102,14 +135,13 @@ Analyze the CUSTOM PROMPT below (considering the brand context above) and provid
 3. ENHANCED PROMPT
    - Rewrite the CUSTOM PROMPT only (not the brand prompt)
    - Preserve the user's intent completely
-   - Add missing elements (format spec, examples, constraints)
-   - Structure with clear sections: TASK, RULES, OUTPUT FORMAT, EXAMPLES, REMINDER
-   - Consider how it will work together with the brand prompt
-   - FORMAT WITH LINE BREAKS: Use \\n for newlines to create readable structure:
-     * Put each section header (TASK:, RULES:, OUTPUT FORMAT:, etc.) on its own line
+   - Apply the enhancement rules above
+   - Structure with clear sections: TASK, RULES, EXAMPLES, REMINDER
+   - FORMAT WITH LINE BREAKS: Use \\n for newlines:
+     * Put each section header on its own line
      * Put each numbered rule on its own line
      * Add blank lines between major sections
-     * Example: "TASK: Extract color.\\n\\nRULES:\\n1. Return only one color.\\n2. Use lowercase.\\n\\nOUTPUT FORMAT:\\n..."
+     * Example: "TASK: Extract color.\\n\\nRULES:\\n1. Return only one color.\\n2. Use lowercase.\\n\\nEXAMPLES:\\n..."
 
 4. CHANGES MADE
    - List each improvement made
@@ -232,7 +264,6 @@ Analyze the following brand prompt and provide:
 1. SCORE BREAKDOWN
    - Score each criterion (0-100)
    - Calculate weighted total score
-   - Provide letter grade (A: 90+, B: 80-89, C: 70-79, D: 60-69, F: <60)
 
 2. ISSUES IDENTIFIED
    - List specific problems found
