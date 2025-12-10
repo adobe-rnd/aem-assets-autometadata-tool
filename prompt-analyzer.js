@@ -12,7 +12,7 @@ let currentAnalysisType = 'custom';
  * Meta-prompt for analyzing user prompts
  * This is sent to the LLM to evaluate and improve the user's custom prompt
  */
-const META_PROMPT = `You are an expert prompt engineer specializing in LLM prompts for image metadata extraction. Your task is to analyze, score, and improve a user's CUSTOM PROMPT that will be used to extract specific attributes from images in Adobe Experience Manager.
+const META_PROMPT = `You are an expert prompt engineer specializing in LLM prompts for image metadata extraction. Your task is to analyze, score, and improve a user's CUSTOM PROMPT that will be used to extract specific attributes from images in Adobe Experience Manager. You will also recommend additional context the user should provide to make the prompt more complete and actionable.
 
 ═══════════════════════════════════════════════════════════════════════════════
 BRAND CONTEXT (FOR AWARENESS ONLY - DO NOT ANALYZE)
@@ -32,6 +32,13 @@ The user's custom prompt (combined with the brand prompt above) will be sent to 
 - Color extraction
 - Custom business-specific attributes
 
+Best practices for prompt engineering:
+- Be Specific: Leave as little to interpretation as possible.
+- Be Descriptive: Use analogies and examples where helpful.
+- Order Matters: Present instructions in a logical sequence.
+- Give the model an “out”: Specify what to return if the requested value is not found.
+- Double Down: Repeat critical instructions before and after main content if needed.
+
 NOTE: The system prompt (not visible here) handles output format (JSON). The custom prompt should focus on WHAT to extract and the rules/constraints, NOT on output format.
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -42,11 +49,13 @@ EVALUATION CRITERIA (Score each 0-100)
    - Is it crystal clear what value/attribute the LLM should extract?
    - Is the task specific and unambiguous?
    - Would someone unfamiliar with the domain understand what to do?
+   - Is the prompt free of contradictory statements or instructions?
 
    RED FLAGS: Vague verbs like "analyze", "describe", "identify" without specifics
 
 2. VALID VALUES (Weight: 20%)
    - If categorical, are all valid/allowed values explicitly listed?
+   - Are categories and words that are used as constraints all clearly defined?
    - Are value constraints clear (e.g., "choose ONE from this list")?
    - Is it clear what type of value is expected (single word, phrase, etc.)?
 
@@ -63,6 +72,7 @@ EVALUATION CRITERIA (Score each 0-100)
    - Does it explicitly forbid unwanted behaviors?
    - Does it say "NO explanations", "NO guessing", "NO commentary"?
    - Does it forbid hallucinating or making assumptions?
+   - Does it forbid adding unwanted formatting or markdown?
 
    RED FLAGS: Only says what TO do, never what NOT to do
 
@@ -90,7 +100,6 @@ Analyze the CUSTOM PROMPT below (considering the brand context above) and provid
 1. SCORE BREAKDOWN
    - Score each criterion (0-100)
    - Calculate weighted total score
-   - Provide letter grade (A: 90+, B: 80-89, C: 70-79, D: 60-69, F: <60)
 
 2. ISSUES IDENTIFIED
    - List specific problems found
@@ -102,9 +111,10 @@ Analyze the CUSTOM PROMPT below (considering the brand context above) and provid
 3. ENHANCED PROMPT
    - Rewrite the CUSTOM PROMPT only (not the brand prompt)
    - Preserve the user's intent completely
-   - Add missing elements (format spec, examples, constraints)
+   - Add missing elements (format spec, examples, constraints, rules)
    - Structure with clear sections: TASK, RULES, OUTPUT FORMAT, EXAMPLES, REMINDER
    - Consider how it will work together with the brand prompt
+   - Maintain formatting of any included lists. (For example, if there is a list of categories and each category is separated by a new line, keep that formatting for that list.)
    - FORMAT WITH LINE BREAKS: Use \\n for newlines to create readable structure:
      * Put each section header (TASK:, RULES:, OUTPUT FORMAT:, etc.) on its own line
      * Put each numbered rule on its own line
@@ -130,7 +140,6 @@ Return your analysis as JSON with this exact structure:
 {
   "score": {
     "total": <0-100>,
-    "grade": "<A/B/C/D/F>",
     "breakdown": {
       "task_clarity": <0-100>,
       "valid_values": <0-100>,
@@ -232,7 +241,6 @@ Analyze the following brand prompt and provide:
 1. SCORE BREAKDOWN
    - Score each criterion (0-100)
    - Calculate weighted total score
-   - Provide letter grade (A: 90+, B: 80-89, C: 70-79, D: 60-69, F: <60)
 
 2. ISSUES IDENTIFIED
    - List specific problems found
@@ -267,7 +275,6 @@ Return your analysis as JSON with this exact structure:
 {
   "score": {
     "total": <0-100>,
-    "grade": "<A/B/C/D/F>",
     "breakdown": {
       "brand_clarity": <0-100>,
       "conciseness": <0-100>,
