@@ -112,7 +112,7 @@ DO NOT:
 
 ---
 RULES FOR RECOMMENDING ADDITIONAL CONTEXT
-Possible suggestions of what to recommend to users if these points are relevant and missing from their prompt:
+Possible suggestions of what to recommend to users if relevant:
 - If there are specific characteristics about the image that are important for decision-making, they should be explicitly stated in the prompt.
 - There should be explicit instructions for handling edge cases, such as what to do if no value from a list is relevant or if the AI can't make a decision.
 - Definitions and vocabularies should be explicitly stated in the prompt. This can include brand lexicon, product names, etc.
