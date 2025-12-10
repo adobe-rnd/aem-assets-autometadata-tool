@@ -629,7 +629,6 @@ async function showPromptAnalyzerModal(promptId, promptText) {
     currentAnalysisType = 'custom';
 
     const modal = document.getElementById('promptAnalyzerModal');
-    const modalTitle = document.getElementById('analyzerModalTitle');
     const originalPromptLabel = document.getElementById('analyzerOriginalPromptLabel');
     const originalPromptEl = document.getElementById('analyzerOriginalPrompt');
     const loadingEl = document.getElementById('analyzerLoading');
@@ -646,8 +645,7 @@ async function showPromptAnalyzerModal(promptId, promptText) {
         analyzeBtn.disabled = true;
     }
 
-    // Update modal title and labels for custom prompt analysis
-    if (modalTitle) modalTitle.textContent = '🔍 Custom Prompt Analyzer';
+    // Update label for custom prompt analysis
     if (originalPromptLabel) originalPromptLabel.textContent = 'Your Custom Prompt:';
 
     // Reset modal state
@@ -706,7 +704,6 @@ async function showBrandAnalyzerModal(brandPromptText) {
     currentAnalysisType = 'brand';
 
     const modal = document.getElementById('promptAnalyzerModal');
-    const modalTitle = document.getElementById('analyzerModalTitle');
     const originalPromptLabel = document.getElementById('analyzerOriginalPromptLabel');
     const originalPromptEl = document.getElementById('analyzerOriginalPrompt');
     const loadingEl = document.getElementById('analyzerLoading');
@@ -723,8 +720,7 @@ async function showBrandAnalyzerModal(brandPromptText) {
         analyzeBtn.disabled = true;
     }
 
-    // Update modal title and labels for brand analysis
-    if (modalTitle) modalTitle.textContent = '🏷️ Brand Prompt Analyzer';
+    // Update label for brand analysis
     if (originalPromptLabel) originalPromptLabel.textContent = 'Your Brand Prompt:';
 
     // Reset modal state
@@ -840,13 +836,9 @@ function populateAnalyzerResults(result) {
         issuesCountEl.textContent = `(${result.issues.length})`;
         result.issues.forEach(issue => {
             const severityClass = `issue-${issue.severity.toLowerCase()}`;
-            const severityIcon = getSeverityIcon(issue.severity);
             issuesEl.innerHTML += `
                 <div class="issue-item ${severityClass}">
-                    <div class="issue-severity">${severityIcon} ${issue.severity}</div>
-                    <div class="issue-problem">${issue.problem}</div>
-                    <div class="issue-impact"><strong>Impact:</strong> ${issue.impact}</div>
-                    <div class="issue-fix"><strong>Fix:</strong> ${issue.fix}</div>
+                    <div class="issue-fix">${issue.fix}</div>
                 </div>
             `;
         });
@@ -855,7 +847,7 @@ function populateAnalyzerResults(result) {
         issuesToggle.classList.remove('expanded');
     } else {
         issuesCountEl.textContent = '(0)';
-        issuesEl.innerHTML = '<p class="no-issues">✅ No significant issues found!</p>';
+        issuesEl.innerHTML = '<p class="no-issues">✅ No suggestions - your prompt looks great!</p>';
         // Show "no issues" message expanded
         issuesEl.classList.remove('collapsed');
         issuesToggle.classList.add('expanded');
