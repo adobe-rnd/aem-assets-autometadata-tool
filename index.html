@@ -44,6 +44,7 @@
                     <div class="brand-prompt-buttons">
                         <button id="saveBrandPromptBtn" class="custom-prompt-btn">💾 Save Brand Prompt</button>
                         <button id="analyzeBrandPromptBtn" class="custom-prompt-btn analyze-prompt-btn">🔍 Analyze</button>
+                        <button id="securityBrandPromptBtn" class="custom-prompt-btn security-prompt-btn">🛡️ Security</button>
                         <button id="clearBrandPromptBtn" class="custom-prompt-btn reset-btn">🗑️ Clear</button>
                     </div>
                 </div>
@@ -317,6 +318,62 @@
                     ✨ Apply Enhanced Prompt
                 </button>
                 <button id="closeAnalyzerBtn" class="export-button" style="background: #6c757d;">Close</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Security Analyzer Modal -->
+    <div id="securityAnalyzerModal" class="api-config-modal">
+        <div class="api-config-content security-modal-content">
+            <span class="close" id="securityModalClose" style="position: absolute; top: 15px; right: 20px;">&times;</span>
+
+            <!-- Original Prompt Section -->
+            <div class="analyzer-section">
+                <h4 id="securityOriginalPromptLabel" class="analyzer-section-title">Prompt Being Checked:</h4>
+                <div id="securityOriginalPrompt" class="analyzer-prompt-display"></div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="securityLoading" class="analyzer-loading">
+                <div class="analyzer-spinner"></div>
+                <p>Running security check...</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="securityError" class="analyzer-error" style="display: none;"></div>
+
+            <!-- Results Section (hidden until loaded) -->
+            <div id="securityResults" style="display: none;">
+
+                <!-- Status and Risk Section -->
+                <div class="analyzer-section security-status-section">
+                    <div class="security-status-row">
+                        <span id="securityStatusBadge" class="security-status-badge">PASS</span>
+                        <span id="securityRiskBadge" class="security-risk-badge">Risk: NONE</span>
+                        <span id="securityTokenCount" class="security-token-count">~0 tokens</span>
+                    </div>
+                </div>
+
+                <!-- Summary Section -->
+                <div class="analyzer-section">
+                    <h4 class="analyzer-section-title">Summary</h4>
+                    <p id="securitySummary" class="analyzer-summary"></p>
+                </div>
+
+                <!-- Flags Section -->
+                <div class="analyzer-section">
+                    <h4 class="analyzer-section-title">Security Flags <span id="securityFlagsCount">(0)</span></h4>
+                    <div id="securityFlagsList" class="security-flags-list">
+                        <!-- Flags will be inserted here -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="analyzer-buttons">
+                <button id="closeSecurityBtn" class="export-button" style="background: #6c757d;">Close</button>
             </div>
 
         </div>

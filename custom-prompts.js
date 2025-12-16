@@ -298,6 +298,25 @@ function renderCustomPromptsList() {
         });
         actionCell.appendChild(analyzeBtn);
 
+        // Security button (for security analyzer feature)
+        const securityBtn = document.createElement('button');
+        securityBtn.className = 'security-prompt-btn';
+        securityBtn.textContent = '🛡️ Security';
+        securityBtn.dataset.promptId = prompt.id;
+        securityBtn.addEventListener('click', () => {
+            // Only check if there's prompt text
+            if (prompt.prompt && prompt.prompt.trim()) {
+                if (typeof window.showSecurityAnalyzerModal === 'function') {
+                    window.showSecurityAnalyzerModal(prompt.id, prompt.prompt);
+                } else {
+                    showNotification('⚠️ Security analyzer not available', 'warning');
+                }
+            } else {
+                showNotification('⚠️ Please enter a prompt before checking security', 'warning');
+            }
+        });
+        actionCell.appendChild(securityBtn);
+
         // Remove button
         const removeBtn = document.createElement('button');
         removeBtn.className = 'remove-prompt-btn';
@@ -535,6 +554,26 @@ function initializeCustomPromptsHandlers() {
                 window.showBrandAnalyzerModal(brandText);
             } else {
                 showNotification('❌ Prompt analyzer not available', 'error');
+            }
+        });
+    }
+
+    // Security button for brand prompt
+    const securityBrandPromptBtn = document.getElementById('securityBrandPromptBtn');
+    if (securityBrandPromptBtn) {
+        securityBrandPromptBtn.addEventListener('click', () => {
+            const brandText = brandPromptInput ? brandPromptInput.value.trim() : '';
+
+            if (!brandText) {
+                showNotification('⚠️ No brand prompt to check. Please enter a brand prompt first.', 'warning');
+                return;
+            }
+
+            // Call the brand security analyzer modal from prompt-analyzer.js
+            if (typeof window.showBrandSecurityAnalyzerModal === 'function') {
+                window.showBrandSecurityAnalyzerModal(brandText);
+            } else {
+                showNotification('❌ Security analyzer not available', 'error');
             }
         });
     }

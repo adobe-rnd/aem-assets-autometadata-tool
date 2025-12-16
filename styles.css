@@ -1124,6 +1124,30 @@
     transform: none;
 }
 
+/* Security Button (in prompt rows) */
+.security-prompt-btn {
+    background: #fd7e14;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 8px;
+    font-size: 13px;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.security-prompt-btn:hover {
+    background: #e96b02;
+    transform: translateY(-1px);
+}
+
+.security-prompt-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
 /* Analyzer Sections */
 .analyzer-section {
     margin-bottom: 20px;
@@ -1440,4 +1464,183 @@
 
 .apply-enhanced-btn:active {
     transform: translateY(0);
+}
+
+/* ============================================
+   SECURITY ANALYZER STYLES
+   ============================================ */
+
+/* Security Modal Content */
+.security-modal-content {
+    max-width: 750px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Security Status Section */
+.security-status-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.security-status-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+/* Status Badge */
+.security-status-badge {
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 1em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.security-status-pass {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.security-status-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+    color: #212529;
+}
+
+.security-status-fail {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+}
+
+/* Risk Badge */
+.security-risk-badge {
+    padding: 6px 14px;
+    border-radius: 15px;
+    font-weight: 600;
+    font-size: 0.85em;
+}
+
+.security-risk-none {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.security-risk-low {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.security-risk-medium {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+.security-risk-high {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.security-risk-critical {
+    background: #880e4f;
+    color: white;
+}
+
+/* Token Count */
+.security-token-count {
+    padding: 6px 12px;
+    background: #e9ecef;
+    border-radius: 12px;
+    font-size: 0.85em;
+    color: #495057;
+}
+
+/* Flags List */
+.security-flags-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.security-no-flags {
+    color: #28a745;
+    font-weight: 500;
+    text-align: center;
+    padding: 20px;
+    font-size: 1em;
+}
+
+/* Individual Flag Item */
+.security-flag-item {
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #6c757d;
+    background: #f8f9fa;
+}
+
+.security-flag-low {
+    border-left-color: #17a2b8;
+    background: #e8f4f8;
+}
+
+.security-flag-medium {
+    border-left-color: #ffc107;
+    background: #fff8e1;
+}
+
+.security-flag-high {
+    border-left-color: #fd7e14;
+    background: #fff3e0;
+}
+
+.security-flag-critical {
+    border-left-color: #dc3545;
+    background: #ffebee;
+}
+
+.security-flag-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.security-flag-severity {
+    font-weight: 700;
+    font-size: 0.85em;
+    text-transform: uppercase;
+}
+
+.security-flag-category {
+    background: #e9ecef;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    color: #495057;
+}
+
+.security-flag-finding {
+    font-weight: 500;
+    color: #212529;
+    margin-bottom: 8px;
+}
+
+.security-flag-evidence {
+    font-family: 'Courier New', monospace;
+    background: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    color: #c7254e;
+    border: 1px solid #e9ecef;
+    margin-bottom: 8px;
+    word-break: break-word;
+}
+
+.security-flag-recommendation {
+    font-size: 0.9em;
+    color: #495057;
+    font-style: italic;
 }
