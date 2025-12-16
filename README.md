@@ -41,9 +41,10 @@ How to use:
 3. The value is stored in `localStorage` and automatically applied to all requests.
 
 Notes:
-- Clearing the System Prompt removes it from subsequent requests.
+- A default system prompt is included that enforces JSON output with confidence scores.
+- Clicking "Clear" resets to the default system prompt (does not remove it).
+- To truly disable the system prompt, manually clear the text and click Save.
 - The existing Brand Prompt continues to prepend to the user prompt text. Both can be used together.
-- If the System Prompt is empty, behavior is unchanged from before (no system message).
 
 ## Contributing
 
