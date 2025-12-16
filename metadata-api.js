@@ -330,8 +330,10 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
                     if (valueKey) {
                         const valueRaw = metadata[valueKey];
                         const valueStr = typeof valueRaw === 'string' ? valueRaw : JSON.stringify(valueRaw);
+                        // Use the originally requested property name if provided, otherwise use what AI returned
+                        const resultKey = property || valueKey;
                         return {
-                            [valueKey]: {
+                            [resultKey]: {
                                 value: this.sanitizeString(valueStr || ''),
                                 confidence_score: score
                             },
@@ -472,16 +474,20 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
     }
 
     /**
-     * Get system prompt from localStorage
+     * Get system prompt from localStorage, falling back to default if not set
      * @private
      */
     getSystemPrompt() {
         try {
             const systemPrompt = localStorage.getItem('systemPrompt');
-            return systemPrompt || '';
+            if (systemPrompt !== null && systemPrompt !== undefined) {
+                return systemPrompt;
+            }
+            // Fall back to default system prompt if nothing is stored
+            return typeof getDefaultSystemPrompt === 'function' ? getDefaultSystemPrompt() : '';
         } catch (error) {
             console.error('Error loading system prompt:', error);
-            return '';
+            return typeof getDefaultSystemPrompt === 'function' ? getDefaultSystemPrompt() : '';
         }
     }
 

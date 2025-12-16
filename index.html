@@ -1160,10 +1160,14 @@
         function loadSystemPrompt() {
             try {
                 const value = localStorage.getItem('systemPrompt');
-                return value || '';
+                if (value !== null) {
+                    return value;
+                }
+                // Fall back to default if nothing stored
+                return typeof getDefaultSystemPrompt === 'function' ? getDefaultSystemPrompt() : '';
             } catch (error) {
                 console.error('Error loading system prompt:', error);
-                return '';
+                return typeof getDefaultSystemPrompt === 'function' ? getDefaultSystemPrompt() : '';
             }
         }
 
@@ -1276,10 +1280,11 @@
                 clearSystemPromptBtn.addEventListener('click', () => {
                     clearSystemPromptStorage();
                     if (systemPromptInput) {
-                        systemPromptInput.value = '';
+                        // Show default prompt after clearing
+                        systemPromptInput.value = typeof getDefaultSystemPrompt === 'function' ? getDefaultSystemPrompt() : '';
                     }
                     if (typeof showNotification === 'function') {
-                        showNotification('✅ System prompt cleared!');
+                        showNotification('✅ System prompt reset to default!');
                     }
                 });
             }
