@@ -11,6 +11,47 @@ The GH pages url is https://adobe-rnd.github.io/aem-assets-autometadata-tool/
 3. Add your custom properties and prompts
 4. Test and iterate
 
+## Confidence Score, Reason, and Data Shape
+
+The UI shows a confidence pill next to each metadata property. Values, scores, and reasons are stored in the following shape:
+
+```
+{ "<property>": { "value": "...", "confidence_score": 0.0..1.0, "confidence_reason": "..." } }
+```
+
+Fields:
+- `value`: The generated metadata value.
+- `confidence_score`: A number between 0 and 1 indicating how confident the AI is in the accuracy of the value.
+- `confidence_reason`: A brief explanation (1-2 sentences) of why the confidence score is what it is.
+
+Parsing behavior:
+- If the model returns a JSON object shaped like `{ <property>: <value>, confidence_score: <0..1>, confidence_reason: "..." }`, that is used directly.
+- If the model returns legacy JSON (e.g., Title/Description/Keywords), values are wrapped as `{ value, confidence_score: null, confidence_reason: null }`.
+- If the model returns plain text (not JSON), the text is wrapped as `{ <property>: { value: text, confidence_score: null, confidence_reason: null } }` for per-property calls (or mapped to defaults).
+
+Exports:
+- JSON export normalizes all properties to `{ value, confidence_score, confidence_reason }`.
+- CSV export includes three columns per property: value, confidence (raw score 0..1), and reason.
+
+UI:
+- Confidence pills display percentage (e.g., 82%) and use color tiers for low/medium/high.
+- Hovering over a confidence pill shows the confidence reason as a tooltip.
+
+## System Prompt
+
+You can now set a global System Prompt that is included in every Azure OpenAI request as a `role: system` message.
+
+How to use:
+1. Open the app and click `🧩 System Prompt` (next to `⚙️ Configure LLM API`).
+2. Enter your system-level guidance (e.g., tone, safety, formatting rules) and click Save.
+3. The value is stored in `localStorage` and automatically applied to all requests.
+
+Notes:
+- A default system prompt is included that enforces JSON output with confidence scores.
+- Clicking "Clear" resets to the default system prompt (does not remove it).
+- To truly disable the system prompt, manually clear the text and click Save.
+- The existing Brand Prompt continues to prepend to the user prompt text. Both can be used together.
+
 ## Contributing
 
 Please follow the contribution guidelines when adding new prompts. 

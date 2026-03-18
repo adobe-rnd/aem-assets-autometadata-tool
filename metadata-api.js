@@ -142,7 +142,7 @@ class MetadataAPI {
                 }
 
                 const result = await response.json();
-                return this.parseAzureAIResponse(result);
+                return this.parseAzureAIResponse(result, property);
 
             } catch (error) {
                 lastError = error;
@@ -209,28 +209,49 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
             console.log('🏷️ Prepended brand prompt to custom prompt');
         }
 
-        return {
-            messages: [
+        // Build messages with optional system prompt
+        const messages = [];
+
+        const systemPrompt = this.getSystemPrompt ? this.getSystemPrompt().trim() : '';
+        console.log('🔍 DEBUG - System prompt length:', systemPrompt.length);
+        console.log('🔍 DEBUG - System prompt first 200 chars:', systemPrompt.substring(0, 200));
+        if (systemPrompt) {
+            messages.push({
+                role: "system",
+                content: [
+                    {
+                        type: "text",
+                        text: systemPrompt
+                    }
+                ]
+            });
+        } else {
+            console.log('⚠️ DEBUG - No system prompt being sent!');
+        }
+
+        messages.push({
+            role: "user",
+            content: [
                 {
-                    role: "user",
-                    content: [
-                        {
-                            type: "text",
-                            text: prompt
-                        },
-                        {
-                            type: "image_url",
-                            image_url: {
-                                url: imageUrl
-                            }
-                        }
-                    ]
+                    type: "text",
+                    text: prompt
+                },
+                {
+                    type: "image_url",
+                    image_url: {
+                        url: imageUrl
+                    }
                 }
-            ],
+            ]
+        });
+
+        return {
+            messages,
             max_tokens: 4096,
             temperature: 0.1,
             top_p: 1,
-            model: this.config.modelName || "gpt-4-vision-preview"
+            model: this.config.modelName || "gpt-4-vision-preview",
+            response_format: { type: "json_object" }  // Force JSON output from the API
         };
     }
 
@@ -238,7 +259,7 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
      * Parse the Azure AI API response
      * @private
      */
-    parseAzureAIResponse(response) {
+    parseAzureAIResponse(response, property) {
         try {
             // Azure AI response format: response.choices[0].message.content
             const content = response.choices?.[0]?.message?.content;
@@ -261,18 +282,34 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
                 
                 const displayMessage = `📝 Raw Response: ${responseStr}`;
                 
-                if (customPrompts.length > 0) {
+                if (property && typeof property === 'string') {
+                    // Per-property: wrap raw response in the new object shape
+                    result[property] = {
+                        value: displayMessage,
+                        confidence_score: null,
+                        confidence_reason: null
+                    };
+                    return result;
+                } else if (customPrompts.length > 0) {
                     // Populate all custom prompt fields with the raw response
                     customPrompts.forEach(promptConfig => {
-                        result[promptConfig.property] = displayMessage;
+                        result[promptConfig.property] = {
+                            value: displayMessage,
+                            confidence_score: null,
+                            confidence_reason: null
+                        };
                     });
                     console.log(`📋 Populated ${customPrompts.length} custom fields with raw response`);
                 } else {
                     // Default field if no custom prompts (description only)
-                    result.description = displayMessage;
+                    result.description = {
+                        value: displayMessage,
+                        confidence_score: null,
+                        confidence_reason: null
+                    };
                     console.log('📋 Populated default field (description) with raw response');
                 }
-                
+
                 return result;
             }
 
@@ -282,23 +319,96 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
                 // Clean the content in case there are markdown code blocks
                 const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
                 metadata = JSON.parse(cleanContent);
+
+                // DEBUG: Log the parsed metadata
+                console.log('🔍 DEBUG - Parsed JSON metadata:', JSON.stringify(metadata, null, 2));
+                console.log('🔍 DEBUG - Requested property:', property);
+                console.log('🔍 DEBUG - Type of parsed metadata:', typeof metadata);
+
+                // Handle case where JSON.parse returns a string (e.g., AI returned "some text" as valid JSON string literal)
+                if (typeof metadata === 'string') {
+                    console.log('⚠️ DEBUG - AI returned a JSON string literal, not an object. Wrapping as plain text.');
+                    const resultKey = property || 'description';
+                    return {
+                        [resultKey]: {
+                            value: this.sanitizeString(metadata),
+                            confidence_score: null,
+                            confidence_reason: null
+                        },
+                        provider: 'openai',
+                        generated_at: new Date().toISOString()
+                    };
+                }
+
+                // If the parsed JSON matches the { <property>: <value>, confidence_score, confidence_reason } shape
+                if (metadata && typeof metadata === 'object') {
+                    const score = (typeof metadata.confidence_score === 'number' && metadata.confidence_score >= 0 && metadata.confidence_score <= 1)
+                        ? metadata.confidence_score
+                        : null;
+                    const reason = (typeof metadata.confidence_reason === 'string' && metadata.confidence_reason.trim() !== '')
+                        ? metadata.confidence_reason.trim()
+                        : null;
+
+                    // DEBUG: Log extracted score and reason
+                    console.log('🔍 DEBUG - Extracted confidence_score:', score, '(raw:', metadata.confidence_score, ')');
+                    console.log('🔍 DEBUG - Extracted confidence_reason:', reason);
+
+                    // Determine the value key
+                    let valueKey = null;
+                    if (property && Object.prototype.hasOwnProperty.call(metadata, property)) {
+                        valueKey = property;
+                    } else {
+                        const keys = Object.keys(metadata).filter(k => k !== 'confidence_score' && k !== 'confidence_reason' && k !== 'provider' && k !== 'generated_at');
+                        console.log('🔍 DEBUG - Available value keys (excluding system keys):', keys);
+                        if (keys.length === 1) {
+                            valueKey = keys[0];
+                        } else if (keys.length > 1) {
+                            // Multiple keys - take the first one that's not a system field
+                            console.log('⚠️ DEBUG - Multiple value keys found, using first one:', keys[0]);
+                            valueKey = keys[0];
+                        }
+                    }
+
+                    console.log('🔍 DEBUG - Selected valueKey:', valueKey);
+
+                    if (valueKey) {
+                        const valueRaw = metadata[valueKey];
+                        const valueStr = typeof valueRaw === 'string' ? valueRaw : JSON.stringify(valueRaw);
+                        // Use the originally requested property name if provided, otherwise use what AI returned
+                        const resultKey = property || valueKey;
+                        console.log('✅ DEBUG - Returning structured result for:', resultKey, 'with score:', score);
+                        return {
+                            [resultKey]: {
+                                value: this.sanitizeString(valueStr || ''),
+                                confidence_score: score,
+                                confidence_reason: reason
+                            },
+                            provider: 'openai',
+                            generated_at: new Date().toISOString()
+                        };
+                    } else {
+                        console.log('⚠️ DEBUG - No valueKey found, falling through to legacy handler');
+                    }
+                }
                 
-                // Return structured JSON response
+                // Legacy shape: Title/Description/Keywords
+                console.log('⚠️ DEBUG - Falling back to legacy Title/Description/Keywords handler');
+                console.log('⚠️ DEBUG - This means no valueKey was found. Original metadata:', JSON.stringify(metadata, null, 2));
                 return {
-                    title: this.sanitizeString(metadata.Title || metadata.title || ''),
-                    description: this.sanitizeString(metadata.Description || metadata.description || ''),
-                    tags: this.sanitizeString(metadata.Keywords || metadata.keywords || metadata.tags || ''),
+                    title: { value: this.sanitizeString(metadata.Title || metadata.title || ''), confidence_score: null, confidence_reason: null },
+                    description: { value: this.sanitizeString(metadata.Description || metadata.description || ''), confidence_score: null, confidence_reason: null },
+                    tags: { value: this.sanitizeString(metadata.Keywords || metadata.keywords || metadata.tags || ''), confidence_score: null, confidence_reason: null },
                     confidence: null,
                     processing_time: null,
                     provider: 'openai',
                     generated_at: new Date().toISOString()
                 };
-                
+
             } catch (parseError) {
                 // If JSON parsing fails, put the raw response in all available fields
                 console.log('📝 JSON parsing failed, using raw response content:', content.substring(0, 100) + '...');
                 console.log('🔧 Full raw response:', content);
-                
+
                 // Get the custom prompts to determine which fields to populate
                 const customPrompts = this.getStoredCustomPrompts();
                 const result = {
@@ -307,19 +417,34 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
                     provider: 'openai',
                     generated_at: new Date().toISOString()
                 };
-                
-                if (customPrompts.length > 0) {
+
+                if (property && typeof property === 'string') {
+                    result[property] = {
+                        value: this.sanitizeString(content),
+                        confidence_score: null,
+                        confidence_reason: null
+                    };
+                    return result;
+                } else if (customPrompts.length > 0) {
                     // Populate all custom prompt fields with the raw content
                     customPrompts.forEach(promptConfig => {
-                        result[promptConfig.property] = this.sanitizeString(content);
+                        result[promptConfig.property] = {
+                            value: this.sanitizeString(content),
+                            confidence_score: null,
+                            confidence_reason: null
+                        };
                     });
                     console.log(`📋 Populated ${customPrompts.length} custom fields with raw content`);
                 } else {
                     // Default field if no custom prompts (description only)
-                    result.description = this.sanitizeString(content);
+                    result.description = {
+                        value: this.sanitizeString(content),
+                        confidence_score: null,
+                        confidence_reason: null
+                    };
                     console.log('📋 Populated default field (description) with raw content');
                 }
-                
+
                 return result;
             }
 
@@ -333,9 +458,9 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
      * Parse the API response (legacy method for compatibility)
      * @private
      */
-    parseAPIResponse(response, provider) {
+    parseAPIResponse(response, provider, property) {
         if (provider === 'openai') {
-            return this.parseAzureAIResponse(response);
+            return this.parseAzureAIResponse(response, property);
         }
         
         try {
@@ -398,6 +523,24 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
         } catch (error) {
             console.error('Error loading brand prompt:', error);
             return '';
+        }
+    }
+
+    /**
+     * Get system prompt from localStorage, falling back to default if not set
+     * @private
+     */
+    getSystemPrompt() {
+        try {
+            const systemPrompt = localStorage.getItem('systemPrompt');
+            if (systemPrompt !== null && systemPrompt !== undefined) {
+                return systemPrompt;
+            }
+            // Fall back to default system prompt if nothing is stored
+            return typeof getDefaultSystemPrompt === 'function' ? getDefaultSystemPrompt() : '';
+        } catch (error) {
+            console.error('Error loading system prompt:', error);
+            return typeof getDefaultSystemPrompt === 'function' ? getDefaultSystemPrompt() : '';
         }
     }
 
@@ -471,7 +614,7 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
      */
     getErrorMetadata(errorMessage) {
         console.log('🚨 API Error occurred, populating fields with error message:', errorMessage);
-        
+
         // Get the custom prompts to determine which fields to populate
         const customPrompts = this.getStoredCustomPrompts();
         const result = {
@@ -479,22 +622,30 @@ Return in pretty-print JSON format. Do not add Markdown or code block formatting
             provider: 'error',
             generated_at: new Date().toISOString()
         };
-        
+
         // Create a user-friendly error message
         const displayMessage = `❌ Error: ${errorMessage}`;
-        
+
         if (customPrompts.length > 0) {
             // Populate all custom prompt fields with the error message
             customPrompts.forEach(promptConfig => {
-                result[promptConfig.property] = displayMessage;
+                result[promptConfig.property] = {
+                    value: displayMessage,
+                    confidence_score: null,
+                    confidence_reason: null
+                };
             });
             console.log(`🔧 Populated ${customPrompts.length} custom fields with error message`);
         } else {
             // Default field if no custom prompts (description only)
-            result.description = displayMessage;
+            result.description = {
+                value: displayMessage,
+                confidence_score: null,
+                confidence_reason: null
+            };
             console.log('🔧 Populated default field (description) with error message');
         }
-        
+
         return result;
     }
 
